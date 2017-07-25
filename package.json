@@ -48,7 +48,6 @@
   "dependencies": {
     "babel-runtime": "^6.11.6",
     "invariant": "^2.2.1",
-    "lodash": "^4.12.0",
     "prop-types": "^15.5.7"
   },
   "peerDependencies": {
@@ -88,6 +87,10 @@
     "extract-text-webpack-plugin": "^1.0.1",
     "html-webpack-plugin": "^2.16.1",
     "isparta-loader": "^2.0.0",
+    "lodash.debounce": "4.0.8",
+    "lodash.find": "4.6.0",
+    "lodash.findindex": "4.6.0",
+    "lodash.sortby": "4.7.0",
     "node-libs-browser": "^0.5.2",
     "node-sass": "^3.7.0",
     "postcss-loader": "^0.9.1",

@@ -2,7 +2,7 @@ import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 import {findDOMNode} from 'react-dom';
 import invariant from 'invariant';
-import findIndex from 'lodash/findIndex';
+import findIndex from 'lodash.findindex';
 import DragLayer from '../DragLayer';
 import Manager from '../Manager';
 import {
@@ -10,17 +10,11 @@ import {
   events,
   getOffset,
   vendorPrefix,
-  provideDisplayName,
-  omit,
+  omit
 } from '../utils';
 import {closestRect} from '../DragLayer/utils';
 
-// Export Higher Order Sortable Container Component
-export default function sortableContainer(
-  WrappedComponent,
-  config = {withRef: false},
-) {
-  return class extends Component {
+export default class extends Component {
     constructor(props) {
       super(props);
       this.dragLayer = props.dragLayer || new DragLayer();
@@ -30,7 +24,7 @@ export default function sortableContainer(
       this.events = {
         start: this.handleStart,
         move: this.handleMove,
-        end: this.handleEnd,
+        end: this.handleEnd
       };
 
       invariant(
@@ -41,10 +35,11 @@ export default function sortableContainer(
       this.state = {};
     }
 
-    static displayName = provideDisplayName('sortableList', WrappedComponent);
-
-    static defaultProps = {
+    static defaultProps = { // eslint-disable-line no-undef
       axis: 'y',
+      config: {
+        withRef: false
+      },
       transitionDuration: 300,
       pressDelay: 0,
       pressThreshold: 5,
@@ -59,7 +54,7 @@ export default function sortableContainer(
           'textarea',
           'select',
           'option',
-          'button',
+          'button'
         ];
 
         if (disabledElements.indexOf(e.target.tagName.toLowerCase()) !== -1) {
@@ -70,12 +65,14 @@ export default function sortableContainer(
       lockOffset: '50%',
       getHelperDimensions: ({node}) => ({
         width: node.offsetWidth,
-        height: node.offsetHeight,
-      }),
+        height: node.offsetHeight
+      })
     };
 
-    static propTypes = {
+    static propTypes = { // eslint-disable-line no-undef
       axis: PropTypes.oneOf(['x', 'y', 'xy']),
+      config: PropTypes.object,
+      component: PropTypes.func.isRequired,
       distance: PropTypes.number,
       dragLayer: PropTypes.object,
       lockAxis: PropTypes.string,
@@ -97,19 +94,19 @@ export default function sortableContainer(
         PropTypes.string,
         PropTypes.arrayOf(
           PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-        ),
+        )
       ]),
       getContainer: PropTypes.func,
-      getHelperDimensions: PropTypes.func,
+      getHelperDimensions: PropTypes.func
     };
 
-    static childContextTypes = {
-      manager: PropTypes.object.isRequired,
+    static childContextTypes = { // eslint-disable-line no-undef
+      manager: PropTypes.object.isRequired
     };
 
     getChildContext() {
       return {
-        manager: this.manager,
+        manager: this.manager
       };
     }
 
@@ -117,7 +114,7 @@ export default function sortableContainer(
       const {
         contentWindow,
         getContainer,
-        useWindowAsScrollContainer,
+        useWindowAsScrollContainer
       } = this.props;
 
       this.container = typeof getContainer === 'function'
@@ -129,7 +126,7 @@ export default function sortableContainer(
         : this.container;
       this.initialScroll = {
         top: this.scrollContainer.scrollTop,
-        left: this.scrollContainer.scrollLeft,
+        left: this.scrollContainer.scrollLeft
       };
       this.contentWindow = typeof contentWindow === 'function'
         ? contentWindow()
@@ -163,7 +160,7 @@ export default function sortableContainer(
       this.checkActiveIndex(nextProps);
     }
 
-    checkActiveIndex = nextProps => {
+    checkActiveIndex = nextProps => { // eslint-disable-line no-undef
       const {items} = nextProps || this.props;
       const {item} = this.manager.active;
       const newIndex = findIndex(items, item);
@@ -175,7 +172,8 @@ export default function sortableContainer(
       this.index = newIndex;
     };
 
-    handleStart = e => {
+    handleStart = e => { // eslint-disable-line no-undef
+      console.debug(`SortableContainer:handleStart`);
       const p = getOffset(e);
       const {distance, shouldCancelStart, items} = this.props;
 
@@ -226,17 +224,18 @@ export default function sortableContainer(
       }
     };
 
-    nodeIsChild = node => {
+    nodeIsChild = node => { // eslint-disable-line no-undef
       return node.sortableInfo.manager === this.manager;
     };
 
-    handleMove = e => {
+    handleMove = e => { // eslint-disable-line no-undef
+      console.debug(`SortableContainer:handleMove`);
       const {distance, pressThreshold} = this.props;
       const p = getOffset(e);
       if (!this.state.sorting && this._touched) {
         this._delta = {
           x: this._pos.x - p.x,
-          y: this._pos.y - p.y,
+          y: this._pos.y - p.y
         };
         const delta = Math.abs(this._delta.x) + Math.abs(this._delta.y);
 
@@ -252,7 +251,8 @@ export default function sortableContainer(
       }
     };
 
-    handleEnd = () => {
+    handleEnd = () => { // eslint-disable-line no-undef
+      console.debug(`SortableContainer:handleEnd`);
       const {distance} = this.props;
 
       this._touched = false;
@@ -262,14 +262,14 @@ export default function sortableContainer(
       }
     };
 
-    cancel = () => {
+    cancel = () => { // eslint-disable-line no-undef
       if (!this.state.sorting) {
         clearTimeout(this.pressTimer);
         this.manager.active = null;
       }
     };
 
-    handlePress = e => {
+    handlePress = e => { // eslint-disable-line no-undef
       let activeNode = null;
       if (this.dragLayer.helper) {
         if (this.manager.active) {
@@ -285,7 +285,7 @@ export default function sortableContainer(
           axis,
           helperClass,
           hideSortableGhost,
-          onSortStart,
+          onSortStart
         } = this.props;
         const {node, collection} = activeNode;
         const {index} = node.sortableInfo;
@@ -294,17 +294,17 @@ export default function sortableContainer(
         this.newIndex = index;
         this.axis = {
           x: axis.indexOf('x') >= 0,
-          y: axis.indexOf('y') >= 0,
+          y: axis.indexOf('y') >= 0
         };
 
         this.initialScroll = {
           top: this.scrollContainer.scrollTop,
-          left: this.scrollContainer.scrollLeft,
+          left: this.scrollContainer.scrollLeft
         };
 
         this.initialWindowScroll = {
           top: window.scrollY,
-          left: window.scrollX,
+          left: window.scrollX
         };
 
         if (hideSortableGhost) {
@@ -319,14 +319,14 @@ export default function sortableContainer(
 
         this.setState({
           sorting: true,
-          sortingIndex: index,
+          sortingIndex: index
         });
 
         if (onSortStart) onSortStart({node, index, collection}, e);
       }
     };
 
-    handleSortMove = e => {
+    handleSortMove = e => { // eslint-disable-line no-undef
       const {onSortMove} = this.props;
 
       // animate nodes if required
@@ -338,7 +338,8 @@ export default function sortableContainer(
       if (onSortMove) onSortMove(e);
     };
 
-    handleSortEnd = (e, newList = null) => {
+    handleSortEnd = (e, newList = null) => { // eslint-disable-line no-undef
+      console.debug(`SortableContainer:handleSortEnd`);
       const {hideSortableGhost, onSortEnd} = this.props;
       if (!this.manager.active) {
         console.warn('there is no active node', e);
@@ -373,7 +374,7 @@ export default function sortableContainer(
 
       this.setState({
         sorting: false,
-        sortingIndex: null,
+        sortingIndex: null
       });
 
       if (typeof onSortEnd === 'function') {
@@ -387,7 +388,7 @@ export default function sortableContainer(
             oldIndex: this.index,
             newIndex: this.newIndex,
             newList,
-            collection,
+            collection
           },
           e,
         );
@@ -396,12 +397,12 @@ export default function sortableContainer(
       this._touched = false;
     };
 
-    handleSortSwap = (index, item) => {
+    handleSortSwap = (index, item) => { // eslint-disable-line no-undef
       const {onSortSwap} = this.props;
       if (typeof onSortSwap === 'function') {
         onSortSwap({
           index,
-          item,
+          item
         });
       }
     };
@@ -411,7 +412,7 @@ export default function sortableContainer(
       if (node) {
         const nodeOffset = {
           top: offset.top + node.offsetTop,
-          left: offset.left + node.offsetLeft,
+          left: offset.left + node.offsetLeft
         };
         if (node.parentNode !== this.container) {
           return this.getEdgeOffset(node.parentNode, nodeOffset);
@@ -424,7 +425,7 @@ export default function sortableContainer(
     getOffset(e) {
       return {
         x: e.touches ? e.touches[0].pageX : e.pageX,
-        y: e.touches ? e.touches[0].pageY : e.pageY,
+        y: e.touches ? e.touches[0].pageY : e.pageY
       };
     }
 
@@ -446,7 +447,7 @@ export default function sortableContainer(
 
       return [
         this.getLockPixelOffset(minLockOffset),
-        this.getLockPixelOffset(maxLockOffset),
+        this.getLockPixelOffset(maxLockOffset)
       ];
     }
 
@@ -482,11 +483,11 @@ export default function sortableContainer(
 
       return {
         x: offsetX,
-        y: offsetY,
+        y: offsetY
       };
     }
 
-    getClosestNode = e => {
+    getClosestNode = e => { // eslint-disable-line no-undef
       const p = getOffset(e);
       // eslint-disable-next-line
       let closestNodes = [];
@@ -505,7 +506,7 @@ export default function sortableContainer(
       if (collection === undefined) {
         return {
           collection,
-          index: 0,
+          index: 0
         };
       }
       const finalNodes = this.manager.refs[collection].map(n => n.node);
@@ -515,11 +516,11 @@ export default function sortableContainer(
       const rect = node.getBoundingClientRect();
       return {
         collection,
-        index: finalIndex + (p.y > rect.bottom ? 1 : 0),
+        index: finalIndex + (p.y > rect.bottom ? 1 : 0)
       };
     };
 
-    checkActive = e => {
+    checkActive = e => { // eslint-disable-line no-undef
       const active = this.manager.active;
       if (!active) {
         // find closest collection
@@ -534,7 +535,7 @@ export default function sortableContainer(
             this.manager.active = {
               index,
               collection,
-              item: this.props.items[index],
+              item: this.props.items[index]
             };
             this.handlePress(e);
           }
@@ -550,7 +551,7 @@ export default function sortableContainer(
       const nodes = this.manager.getOrderedRefs();
       const deltaScroll = {
         left: this.scrollContainer.scrollLeft - this.initialScroll.left,
-        top: this.scrollContainer.scrollTop - this.initialScroll.top,
+        top: this.scrollContainer.scrollTop - this.initialScroll.top
       };
       const sortingOffset = {
         left: this.dragLayer.offsetEdge.left -
@@ -560,12 +561,12 @@ export default function sortableContainer(
         top: this.dragLayer.offsetEdge.top -
           this.dragLayer.distanceBetweenContainers.y +
           this.dragLayer.translate.y +
-          deltaScroll.top,
+          deltaScroll.top
       };
 
       const scrollDifference = {
         top: (window.scrollY - this.initialWindowScroll.top),
-        left: (window.scrollX - this.initialWindowScroll.left),
+        left: (window.scrollX - this.initialWindowScroll.left)
       };
 
       this.newIndex = null;
@@ -580,12 +581,12 @@ export default function sortableContainer(
             : this.dragLayer.width / 2,
           height: this.dragLayer.height > height
             ? height / 2
-            : this.dragLayer.height / 2,
+            : this.dragLayer.height / 2
         };
 
         const translate = {
           x: 0,
-          y: 0,
+          y: 0
         };
         let {edgeOffset} = nodes[i];
 
@@ -725,19 +726,19 @@ export default function sortableContainer(
       }
     }
 
-    autoscroll = () => {
+    autoscroll = () => { // eslint-disable-line no-undef
       const translate = this.dragLayer.translate;
       const direction = {
         x: 0,
-        y: 0,
+        y: 0
       };
       const speed = {
         x: 1,
-        y: 1,
+        y: 1
       };
       const acceleration = {
         x: 10,
-        y: 10,
+        y: 10
       };
 
       if (
@@ -798,7 +799,7 @@ export default function sortableContainer(
             this.isAutoScrolling = true;
             const offset = {
               left: 1 * speed.x * direction.x,
-              top: 1 * speed.y * direction.y,
+              top: 1 * speed.y * direction.y
             };
             this.scrollContainer.scrollTop += offset.top;
             this.scrollContainer.scrollLeft += offset.left;
@@ -813,20 +814,24 @@ export default function sortableContainer(
 
     getWrappedInstance() {
       invariant(
-        config.withRef,
+        this.props.config.withRef,
         'To access the wrapped instance, you need to pass in {withRef: true} as the second argument of the SortableContainer() call',
       );
       return this.refs.wrappedInstance;
     }
 
     render() {
+      const { component: Component, config } = this.props;
+
       const ref = config.withRef ? 'wrappedInstance' : null;
 
-      return (
-        <WrappedComponent
+      return <Component
           ref={ref}
           {...omit(
             this.props,
+            'component',
+            'dragLayer',
+            'config',
             'contentWindow',
             'useWindowAsScrollContainer',
             'distance',
@@ -848,8 +853,6 @@ export default function sortableContainer(
             'getContainer',
             'getHelperDimensions',
           )}
-        />
-      );
+        />;
     }
-  };
-}
+};

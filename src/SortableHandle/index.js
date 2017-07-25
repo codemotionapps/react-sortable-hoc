@@ -2,13 +2,9 @@ import React, {Component} from 'react';
 import {findDOMNode} from 'react-dom';
 import invariant from 'invariant';
 
-import {provideDisplayName} from '../utils';
-
 // Export Higher Order Sortable Element Component
 export default function sortableHandle(WrappedComponent, config = {withRef: false}) {
   return class extends Component {
-    static displayName = provideDisplayName('sortableHandle', WrappedComponent);
-
     componentDidMount() {
       const node = findDOMNode(this);
       node.sortableHandle = true;
