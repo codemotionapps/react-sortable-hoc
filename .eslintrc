@@ -2,16 +2,15 @@
   "extends": "react-app",
   "rules": {
     "prefer-const": ["error"],
-    "comma-dangle": ["error", "always-multiline"],
-    "indent": ["error", 2, {"SwitchCase": 1}],
+    "comma-dangle": ["warn", "never"],
     "semi": ["error", "always"],
     "no-mixed-operators": [
       "warn",
       {
         "groups": [
-          ['&', '|', '^', '~', '<<', '>>', '>>>'],
-          ['==', '!=', '===', '!==', '>', '>=', '<', '<='],
-          ['in', 'instanceof']
+          ["&", "|", "^", "~", "<<", ">>", ">>>"],
+          ["==", "!=", "===", "!==", ">", ">=", "<", "<="],
+          ["in", "instanceof"]
         ],
         "allowSamePrecedence": true
       }

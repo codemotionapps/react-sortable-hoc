@@ -1,8 +1,8 @@
-import find from 'lodash/find';
-import sortBy from 'lodash/sortBy';
+import find from 'lodash.find';
+import sortBy from 'lodash.sortby';
 
 export default class Manager {
-  refs = {};
+  refs = {}; // eslint-disable-line no-undef
 
   add(collection, ref) {
     if (!this.refs[collection]) {

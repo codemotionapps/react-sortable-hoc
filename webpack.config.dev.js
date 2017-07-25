@@ -46,4 +46,4 @@ module.exports = {
         ]
     },
     postcss: [autoprefixer]
-}
+};

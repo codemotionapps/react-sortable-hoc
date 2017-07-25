@@ -30,7 +30,7 @@ export function omit(obj, ...keysToOmit) {
 export const events = {
   start: ['touchstart', 'mousedown'],
   move: ['touchmove', 'mousemove'],
-  end: ['touchend', 'touchcancel', 'mouseup'],
+  end: ['touchend', 'touchcancel', 'mouseup']
 };
 
 export const vendorPrefix = (function() {
@@ -56,7 +56,7 @@ export function getOffset(e) {
     x: event.clientX,
     y: event.clientY,
     pageX: event.pageX,
-    pageY: event.pageY,
+    pageY: event.pageY
   };
 }
 
@@ -91,7 +91,7 @@ export function getElementMargin(element) {
     top: getCSSPixelValue(style.marginTop),
     right: getCSSPixelValue(style.marginRight),
     bottom: getCSSPixelValue(style.marginBottom),
-    left: getCSSPixelValue(style.marginLeft),
+    left: getCSSPixelValue(style.marginLeft)
   };
 }
 

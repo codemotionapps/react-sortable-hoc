@@ -16,7 +16,7 @@ export function closestRect(x, y, containers) {
 export function getDelta(rect1, rect2) {
   return {
     x: rect1.left - rect2.left,
-    y: rect1.top - rect2.top,
+    y: rect1.top - rect2.top
   };
 }
 

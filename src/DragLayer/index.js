@@ -3,13 +3,13 @@ import {
   vendorPrefix,
   getOffset,
   getElementMargin,
-  clamp,
+  clamp
 } from '../utils';
 import {closestRect, updateDistanceBetweenContainers} from './utils';
 
 export default class DragLayer {
-  helper = null;
-  lists = [];
+  helper = null; // eslint-disable-line no-undef
+  lists = []; // eslint-disable-line no-undef
 
   addRef(list) {
     this.lists.push(list);
@@ -23,6 +23,7 @@ export default class DragLayer {
   }
 
   startDrag(parent, list, e) {
+	  console.debug(`DragLayer:startDrag`);
     const offset = getOffset(e);
     const activeNode = list.manager.getActive();
 
@@ -30,7 +31,7 @@ export default class DragLayer {
       const {
         axis,
         getHelperDimensions,
-        useWindowAsScrollContainer,
+        useWindowAsScrollContainer
       } = list.props;
       const {node, collection} = activeNode;
       const {index} = node.sortableInfo;
@@ -42,7 +43,7 @@ export default class DragLayer {
       this.height = dimensions.height;
       this.marginOffset = {
         x: margin.left + margin.right,
-        y: Math.max(margin.top, margin.bottom),
+        y: Math.max(margin.top, margin.bottom)
       };
       this.boundingClientRect = node.getBoundingClientRect();
       this.containerBoundingRect = containerBoundingRect;
@@ -50,19 +51,19 @@ export default class DragLayer {
 
       this.axis = {
         x: axis.indexOf('x') >= 0,
-        y: axis.indexOf('y') >= 0,
+        y: axis.indexOf('y') >= 0
       };
       this.offsetEdge = list.getEdgeOffset(node);
       this.initialOffset = offset;
       this.distanceBetweenContainers = {
         x: 0,
-        y: 0,
+        y: 0
       };
 
       const fields = node.querySelectorAll('input, textarea, select');
       const clonedNode = node.cloneNode(true);
       const clonedFields = [
-        ...clonedNode.querySelectorAll('input, textarea, select'),
+        ...clonedNode.querySelectorAll('input, textarea, select')
       ]; // Convert NodeList to Array
 
       clonedFields.forEach((field, index) => {
@@ -132,7 +133,7 @@ export default class DragLayer {
     this.handleSortEnd();
   }
 
-  handleSortMove = e => {
+  handleSortMove = e => { // eslint-disable-line no-undef
     e.preventDefault(); // Prevent scrolling on mobile
     this.updatePosition(e);
     this.updateTargetContainer(e);
@@ -141,7 +142,7 @@ export default class DragLayer {
     }
   };
 
-  handleSortEnd = e => {
+  handleSortEnd = e => { // eslint-disable-line no-undef
     if (this.listenerNode) {
       events.move.forEach(eventName =>
         this.listenerNode.removeEventListener(eventName, this.handleSortMove));
@@ -165,7 +166,7 @@ export default class DragLayer {
     const offset = getOffset(e);
     const translate = {
       x: offset.x - this.initialOffset.x,
-      y: offset.y - this.initialOffset.y,
+      y: offset.y - this.initialOffset.y
     };
     // Adjust for window scroll
     translate.y -= (window.scrollY - this.currentList.initialWindowScroll.top);
@@ -177,15 +178,15 @@ export default class DragLayer {
     if (lockToContainerEdges) {
       const [
         minLockOffset,
-        maxLockOffset,
+        maxLockOffset
       ] = this.currentList.getLockPixelOffsets();
       const minOffset = {
         x: this.width / 2 - minLockOffset.x,
-        y: this.height / 2 - minLockOffset.y,
+        y: this.height / 2 - minLockOffset.y
       };
       const maxOffset = {
         x: this.width / 2 - maxLockOffset.x,
-        y: this.height / 2 - maxLockOffset.y,
+        y: this.height / 2 - maxLockOffset.y
       };
 
       translate.x = clamp(
@@ -225,14 +226,14 @@ export default class DragLayer {
         this.currentList,
         {
           width: this.width,
-          height: this.height,
+          height: this.height
         },
       );
       this.currentList.handleSortEnd(e, closest);
       this.currentList = closest;
       this.currentList.manager.active = {
         ...this.currentList.getClosestNode(e),
-        item,
+        item
       };
       this.currentList.handlePress(e);
     }

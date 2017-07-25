@@ -3,25 +3,24 @@ import PropTypes from 'prop-types';
 import {findDOMNode} from 'react-dom';
 import invariant from 'invariant';
 
-import {provideDisplayName, omit} from '../utils';
+import { omit } from '../utils';
 
-// Export Higher Order Sortable Element Component
-export default function sortableElement(WrappedComponent, config = {withRef: false}) {
-  return class extends Component {
-    static displayName = provideDisplayName('sortableElement', WrappedComponent);
-
-    static contextTypes = {
-      manager: PropTypes.object.isRequired,
+export default class extends Component {
+    static contextTypes = { // eslint-disable-line no-undef
+      manager: PropTypes.object.isRequired
     };
 
-    static propTypes = {
+    static propTypes = { // eslint-disable-line no-undef
       index: PropTypes.number.isRequired,
+      config: PropTypes.object,
+      component: PropTypes.func.isRequired,
       collection: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-      disabled: PropTypes.bool,
+      disabled: PropTypes.bool
     };
 
-    static defaultProps = {
+    static defaultProps = { // eslint-disable-line no-undef
       collection: 0,
+      config: {withRef: false}
     };
 
     componentDidMount() {
@@ -61,7 +60,7 @@ export default function sortableElement(WrappedComponent, config = {withRef: fal
       node.sortableInfo = {
         index,
         collection,
-        manager: this.context.manager,
+        manager: this.context.manager
       };
 
       this.ref = {node};
@@ -74,21 +73,20 @@ export default function sortableElement(WrappedComponent, config = {withRef: fal
 
     getWrappedInstance() {
       invariant(
-        config.withRef,
+        this.props.config.withRef,
         'To access the wrapped instance, you need to pass in {withRef: true} as the second argument of the SortableElement() call'
       );
       return this.refs.wrappedInstance;
     }
 
     render() {
+      const { component: Component, config } = this.props;
+
       const ref = config.withRef ? 'wrappedInstance' : null;
 
-      return (
-        <WrappedComponent
+      return <Component
           ref={ref}
-          {...omit(this.props, 'collection', 'disabled', 'index')}
-        />
-      );
+          {...omit(this.props, 'component', 'config', 'collection', 'disabled', 'index')}
+      />;
     }
-  };
 }
