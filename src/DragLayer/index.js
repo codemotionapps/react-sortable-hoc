@@ -12,29 +12,36 @@ module.exports = class {
 	helper = null; // eslint-disable-line no-undef
 	lists = []; // eslint-disable-line no-undef
 
-	addRef(list) {
+	constructor(){
+		this.events = {
+			handleSortMove: this.handleSortMove.bind(this),
+			handleSortEnd: this.handleSortEnd.bind(this)
+		};
+	}
+
+	addRef(list){
 		this.lists.push(list);
 	}
 
-	removeRef(list) {
+	removeRef(list){
 		const i = this.lists.indexOf(list);
-		if (i !== -1) {
+		if(i !== -1){
 			this.lists.splice(i, 1);
 		}
 	}
 
-	startDrag(parent, list, e) {
+	startDrag(parent, list, e){
 		const offset = getOffset(e);
 		const activeNode = list.manager.getActive();
 
-		if (activeNode) {
+		if(activeNode){
 			const {
 				axis,
 				getHelperDimensions,
 				useWindowAsScrollContainer
 			} = list.props;
-			const {node, collection} = activeNode;
-			const {index} = node.sortableInfo;
+			const { node, collection } = activeNode;
+			const { index } = node.sortableInfo;
 			const margin = getElementMargin(node);
 			const containerBoundingRect = list.container.getBoundingClientRect();
 			const dimensions = getHelperDimensions({index, node, collection});
@@ -85,7 +92,7 @@ module.exports = class {
 
 			this.minTranslate = {};
 			this.maxTranslate = {};
-			if (this.axis.x) {
+			if(this.axis.x){
 				this.minTranslate.x = (useWindowAsScrollContainer
 					? 0
 					: containerBoundingRect.left) -
@@ -97,7 +104,7 @@ module.exports = class {
 					this.boundingClientRect.left -
 					this.width / 2;
 			}
-			if (this.axis.y) {
+			if(this.axis.y){
 				this.minTranslate.y = (useWindowAsScrollContainer
 					? 0
 					: containerBoundingRect.top) -
@@ -111,46 +118,42 @@ module.exports = class {
 			}
 
 			this.listenerNode = e.touches ? node : list.contentWindow;
-			events.move.forEach(eventName =>
-				this.listenerNode.addEventListener(
-					eventName,
-					this.handleSortMove,
-					false,
-				));
-			events.end.forEach(eventName =>
-				this.listenerNode.addEventListener(
-					eventName,
-					this.handleSortEnd,
-					false,
-				));
+			events.move.forEach(
+				event => this.listenerNode.addEventListener(event, this.events.handleSortMove, false)
+			);
+			events.end.forEach(
+				event => this.listenerNode.addEventListener(event, this.events.handleSortEnd, false)
+			);
 
 			return activeNode;
 		}
 		return false;
 	}
 
-	stopDrag() {
+	stopDrag(){
 		this.handleSortEnd();
 	}
 
-	handleSortMove = e => { // eslint-disable-line no-undef
+	handleSortMove(e){
 		e.preventDefault(); // Prevent scrolling on mobile
 		this.updatePosition(e);
 		this.updateTargetContainer(e);
-		if (this.currentList) {
+		if(this.currentList){
 			this.currentList.handleSortMove(e);
 		}
 	};
 
-	handleSortEnd = e => { // eslint-disable-line no-undef
-		if (this.listenerNode) {
-			events.move.forEach(eventName =>
-				this.listenerNode.removeEventListener(eventName, this.handleSortMove));
-			events.end.forEach(eventName =>
-				this.listenerNode.removeEventListener(eventName, this.handleSortEnd));
+	handleSortEnd(e){
+		if(this.listenerNode){
+			events.move.forEach(
+				event => this.listenerNode.removeEventListener(event, this.events.handleSortMove)
+			);
+			events.end.forEach(
+				event => this.listenerNode.removeEventListener(event, this.events.handleSortEnd)
+			);
 		}
 
-		if (typeof this.onDragEnd === 'function') {
+		if(typeof this.onDragEnd === 'function'){
 			this.onDragEnd();
 		}
 		// Remove the helper from the DOM
@@ -161,7 +164,7 @@ module.exports = class {
 		}
 	};
 
-	updatePosition(e) {
+	updatePosition(e){
 		const {lockAxis, lockToContainerEdges} = this.currentList.props;
 		const offset = getOffset(e);
 		const translate = {
@@ -212,7 +215,7 @@ module.exports = class {
 		] = `translate3d(${translate.x}px,${translate.y}px, 0)`;
 	}
 
-	updateTargetContainer(e) {
+	updateTargetContainer(e){
 		const {pageX, pageY} = this.delta;
 		const closest = this.lists[
 			closestRect(pageX, pageY, this.lists.map(l => l.container))

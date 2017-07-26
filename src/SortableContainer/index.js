@@ -58,9 +58,9 @@ module.exports = class extends Component {
 		this.dragLayer.onDragEnd = props.onDragEnd;
 		this.manager = new Manager();
 		this.events = {
-			start: this.handleStart,
-			move: this.handleMove,
-			end: this.handleEnd
+			start: this.handleStart.bind(this),
+			move: this.handleMove.bind(this),
+			end: this.handleEnd.bind(this)
 		};
 
 		invariant(
@@ -111,79 +111,92 @@ module.exports = class extends Component {
 		manager: PropTypes.object.isRequired
 	};
 
-	getChildContext() {
+	getChildContext(){
 		return {
 			manager: this.manager
 		};
 	}
 
-	componentDidMount() {
+	componentDidMount(){
 		const {
 			contentWindow,
 			getContainer,
 			useWindowAsScrollContainer
 		} = this.props;
 
-		this.container = typeof getContainer === 'function'
-			? getContainer(this.getWrappedInstance())
-			: findDOMNode(this);
+		this.container = do{
+			if(typeof getContainer === 'function'){
+				getContainer(this.getWrappedInstance());
+			}else{
+				findDOMNode(this);
+			}
+		};
+
 		this.document = this.container.ownerDocument || document;
-		this.scrollContainer = useWindowAsScrollContainer
-			? this.document.body
-			: this.container;
+
+		this.scrollContainer = do{
+			if(useWindowAsScrollContainer){
+				this.document.body;
+			}else{
+				this.container;
+			}
+		};
+
 		this.initialScroll = {
 			top: this.scrollContainer.scrollTop,
 			left: this.scrollContainer.scrollLeft
 		};
-		this.contentWindow = typeof contentWindow === 'function'
-			? contentWindow()
-			: contentWindow;
+		this.contentWindow = do{
+			if(typeof contentWindow === 'function'){
+				contentWindow();
+			}else{
+				contentWindow;
+			}
+		};
 
-		for (const key in this.events) {
-			if (this.events.hasOwnProperty(key)) {
-				events[key].forEach(eventName =>
-					this.container.addEventListener(
-						eventName,
-						this.events[key],
-						false,
-					));
+		for(const key in this.events){
+			if(this.events.hasOwnProperty(key)){
+				events[key].forEach(
+					event => this.container.addEventListener(event, this.events[key], false)
+				);
 			}
 		}
 	}
 
-	componentWillUnmount() {
+	componentWillUnmount(){
 		this.dragLayer.removeRef(this);
-		for (const key in this.events) {
-			if (this.events.hasOwnProperty(key)) {
-				events[key].forEach(eventName =>
-					this.container.removeEventListener(eventName, this.events[key]));
+		for(const key in this.events){
+			if(this.events.hasOwnProperty(key)){
+				events[key].forEach(
+					event => this.container.removeEventListener(event, this.events[key])
+				);
 			}
 		}
 	}
 
-	componentWillReceiveProps(nextProps) {
+	componentWillReceiveProps(nextProps){
 		const {active} = this.manager;
-		if (!active) return;
+		if(!active) return;
 		this.checkActiveIndex(nextProps);
 	}
 
-	checkActiveIndex = nextProps => { // eslint-disable-line no-undef
-		const {items} = nextProps || this.props;
-		const {item} = this.manager.active;
+	checkActiveIndex(nextProps){
+		const { items } = nextProps || this.props;
+		const { item } = this.manager.active;
 		const newIndex = findIndex(items, item);
-		if (newIndex === -1) {
+		if(newIndex === -1){
 			this.dragLayer.stopDrag();
 			return;
 		}
 		this.manager.active.index = newIndex;
 		this.index = newIndex;
-	};
+	}
 
-	handleStart = e => { // eslint-disable-line no-undef
+	handleStart(e){
 		const p = getOffset(e);
-		const {distance, shouldCancelStart, items} = this.props;
+		const { distance, shouldCancelStart, items } = this.props;
 
-		if (e.button === 2 || shouldCancelStart(e)) {
+		if(e.button === 2 || shouldCancelStart(e)){
 			return false;
 		}
 
@@ -228,16 +241,16 @@ module.exports = class extends Component {
 				}
 			}
 		}
-	};
+	}
 
-	nodeIsChild = node => { // eslint-disable-line no-undef
+	nodeIsChild(node){
 		return node.sortableInfo.manager === this.manager;
-	};
+	}
 
-	handleMove = e => { // eslint-disable-line no-undef
-		const {distance, pressThreshold} = this.props;
+	handleMove(e){
+		const { distance, pressThreshold } = this.props;
 		const p = getOffset(e);
-		if (!this.state.sorting && this._touched) {
+		if(!this.state.sorting && this._touched){
 			this._delta = {
 				x: this._pos.x - p.x,
 				y: this._pos.y - p.y
@@ -254,45 +267,45 @@ module.exports = class extends Component {
 				this.handlePress(e);
 			}
 		}
-	};
+	}
 
-	handleEnd = () => { // eslint-disable-line no-undef
-		const {distance} = this.props;
+	handleEnd(){
+		const { distance } = this.props;
 
 		this._touched = false;
 
-		if (!distance) {
+		if(!distance){
 			this.cancel();
 		}
-	};
+	}
 
-	cancel = () => { // eslint-disable-line no-undef
-		if (!this.state.sorting) {
+	cancel(){
+		if(!this.state.sorting){
 			clearTimeout(this.pressTimer);
 			this.manager.active = null;
 		}
-	};
+	}
 
-	handlePress = e => { // eslint-disable-line no-undef
+	handlePress(e){
 		let activeNode = null;
-		if (this.dragLayer.helper) {
-			if (this.manager.active) {
+		if(this.dragLayer.helper){
+			if(this.manager.active){
 				this.checkActiveIndex();
 				activeNode = this.manager.getActive();
 			}
-		} else {
+		}else{
 			activeNode = this.dragLayer.startDrag(this.document.body, this, e);
 		}
 
-		if (activeNode) {
+		if(activeNode){
 			const {
 				axis,
 				helperClass,
 				hideSortableGhost,
 				onSortStart
 			} = this.props;
-			const {node, collection} = activeNode;
-			const {index} = node.sortableInfo;
+			const { node, collection } = activeNode;
+			const { index } = node.sortableInfo;
 
 			this.index = index;
 			this.newIndex = index;
@@ -311,7 +324,7 @@ module.exports = class extends Component {
 				left: window.scrollX
 			};
 
-			if (hideSortableGhost) {
+			if(hideSortableGhost){
 				this.sortableGhost = node;
 				node.style.visibility = 'hidden';
 				node.style.opacity = 0;
@@ -328,35 +341,35 @@ module.exports = class extends Component {
 
 			if (onSortStart) onSortStart({node, index, collection}, e);
 		}
-	};
+	}
 
-	handleSortMove = e => { // eslint-disable-line no-undef
-		const {onSortMove} = this.props;
+	handleSortMove(e){
+		const { onSortMove } = this.props;
 
 		// animate nodes if required
-		if (this.checkActive(e)) {
+		if(this.checkActive(e)){
 			this.animateNodes();
 			this.autoscroll();
 		}
 
-		if (onSortMove) onSortMove(e);
-	};
+		if(onSortMove) onSortMove(e);
+	}
 
-	handleSortEnd = (e, newList = null) => { // eslint-disable-line no-undef
-		const {hideSortableGhost, onSortEnd} = this.props;
-		if (!this.manager.active) {
+	handleSortEnd(e, newList = null){
+		const { hideSortableGhost, onSortEnd } = this.props;
+		if(!this.manager.active){
 			console.warn('there is no active node', e);
 			return;
 		}
-		const {collection} = this.manager.active;
+		const { collection } = this.manager.active;
 
-		if (hideSortableGhost && this.sortableGhost) {
+		if(hideSortableGhost && this.sortableGhost){
 			this.sortableGhost.style.visibility = '';
 			this.sortableGhost.style.opacity = '';
 		}
 
 		const nodes = this.manager.refs[collection];
-		for (let i = 0, len = nodes.length; i < len; i++) {
+		for(let i = 0, len = nodes.length; i < len; i++){
 			const node = nodes[i];
 			const el = node.node;
 
@@ -380,37 +393,34 @@ module.exports = class extends Component {
 			sortingIndex: null
 		});
 
-		if (typeof onSortEnd === 'function') {
+		if(typeof onSortEnd === 'function'){
 			// get the index in the new list
-			if (newList) {
+			if(newList){
 				this.newIndex = newList.getClosestNode(e).index;
 			}
 
-			onSortEnd(
-				{
-					oldIndex: this.index,
-					newIndex: this.newIndex,
-					newList,
-					collection
-				},
-				e,
-			);
+			onSortEnd({
+				oldIndex: this.index,
+				newIndex: this.newIndex,
+				newList,
+				collection
+			}, e,);
 		}
 
 		this._touched = false;
-	};
+	}
 
-	handleSortSwap = (index, item) => { // eslint-disable-line no-undef
-		const {onSortSwap} = this.props;
-		if (typeof onSortSwap === 'function') {
+	handleSortSwap(index, item){
+		const { onSortSwap } = this.props;
+		if(typeof onSortSwap === 'function'){
 			onSortSwap({
 				index,
 				item
 			});
 		}
-	};
+	}
 
-	getEdgeOffset(node, offset = {top: 0, left: 0}) {
+	getEdgeOffset(node, offset = {top: 0, left: 0}){
 		// Get the actual offsetTop / offsetLeft value, no matter how deep the node is nested
 		if (node) {
 			const nodeOffset = {
@@ -425,17 +435,17 @@ module.exports = class extends Component {
 		}
 	}
 
-	getOffset(e) {
+	getOffset(e){
 		return {
 			x: e.touches ? e.touches[0].pageX : e.pageX,
 			y: e.touches ? e.touches[0].pageY : e.pageY
 		};
 	}
 
-	getLockPixelOffsets() {
-		let {lockOffset} = this.props;
+	getLockPixelOffsets(){
+		let { lockOffset } = this.props;
 
-		if (!Array.isArray(lockOffset)) {
+		if(!Array.isArray(lockOffset)){
 			lockOffset = [lockOffset, lockOffset];
 		}
 
@@ -446,7 +456,7 @@ module.exports = class extends Component {
 			lockOffset,
 		);
 
-		const [minLockOffset, maxLockOffset] = lockOffset;
+		const [ minLockOffset, maxLockOffset ] = lockOffset;
 
 		return [
 			this.getLockPixelOffset(minLockOffset),
@@ -454,12 +464,12 @@ module.exports = class extends Component {
 		];
 	}
 
-	getLockPixelOffset(lockOffset) {
+	getLockPixelOffset(lockOffset){
 		let offsetX = lockOffset;
 		let offsetY = lockOffset;
 		let unit = 'px';
 
-		if (typeof lockOffset === 'string') {
+		if(typeof lockOffset === 'string'){
 			const match = /^[+-]?\d*(?:\.\d*)?(px|%)$/.exec(lockOffset);
 
 			invariant(
@@ -479,7 +489,7 @@ module.exports = class extends Component {
 			lockOffset,
 		);
 
-		if (unit === '%') {
+		if(unit === '%'){
 			offsetX = offsetX * this.dragLayer.width / 100;
 			offsetY = offsetY * this.dragLayer.height / 100;
 		}
@@ -490,12 +500,10 @@ module.exports = class extends Component {
 		};
 	}
 
-	getClosestNode = e => { // eslint-disable-line no-undef
+	getClosestNode(e){
 		const p = getOffset(e);
-		// eslint-disable-next-line
-		let closestNodes = [];
-		// eslint-disable-next-line
-		let closestCollections = [];
+		const closestNodes = [];
+		const closestCollections = [];
 		//TODO: keys is converting number to string!!! check origin value type as number???
 		Object.keys(this.manager.refs).forEach(collection => {
 			const nodes = this.manager.refs[collection].map(n => n.node);
@@ -506,7 +514,7 @@ module.exports = class extends Component {
 		});
 		const index = closestRect(p.x, p.y, closestNodes);
 		const collection = closestCollections[index];
-		if (collection === undefined) {
+		if(collection === undefined){
 			return {
 				collection,
 				index: 0
@@ -521,11 +529,11 @@ module.exports = class extends Component {
 			collection,
 			index: finalIndex + (p.y > rect.bottom ? 1 : 0)
 		};
-	};
+	}
 
-	checkActive = e => { // eslint-disable-line no-undef
+	checkActive(e){
 		const active = this.manager.active;
-		if (!active) {
+		if(!active){
 			// find closest collection
 			const node = closest(e.target, el => Boolean(el.sortableInfo));
 			if (node && node.sortableInfo) {
@@ -546,11 +554,11 @@ module.exports = class extends Component {
 			return false;
 		}
 		return true;
-	};
+	}
 
-	animateNodes() {
-		if (!this.axis) return;
-		const {transitionDuration, hideSortableGhost} = this.props;
+	animateNodes(){
+		if(!this.axis) return;
+		const { transitionDuration, hideSortableGhost } = this.props;
 		const nodes = this.manager.getOrderedRefs();
 		const deltaScroll = {
 			left: this.scrollContainer.scrollLeft - this.initialScroll.left,
@@ -682,7 +690,7 @@ module.exports = class extends Component {
 						}
 						this.newIndex = index;
 					}
-				} else {
+				}else{
 					if (
 						index > this.index &&
 						(sortingOffset.left + scrollDifference.left) + offset.width >= edgeOffset.left
@@ -702,7 +710,7 @@ module.exports = class extends Component {
 						}
 					}
 				}
-			} else if (this.axis.y) {
+			}else if(this.axis.y){
 				if (
 					index > this.index &&
 					(sortingOffset.top + scrollDifference.top) + offset.height >= edgeOffset.top
@@ -730,7 +738,7 @@ module.exports = class extends Component {
 		}
 	}
 
-	autoscroll = () => { // eslint-disable-line no-undef
+	autoscroll(){
 		const translate = this.dragLayer.translate;
 		const direction = {
 			x: 0,
@@ -745,9 +753,7 @@ module.exports = class extends Component {
 			y: 10
 		};
 
-		if (
-			translate.y >= this.dragLayer.maxTranslate.y - this.dragLayer.height / 2
-		) {
+		if(translate.y >= this.dragLayer.maxTranslate.y - this.dragLayer.height / 2){
 			direction.y = 1; // Scroll Down
 			speed.y = acceleration.y *
 				Math.abs(
@@ -756,9 +762,7 @@ module.exports = class extends Component {
 						translate.y) /
 						this.dragLayer.height,
 				);
-		} else if (
-			translate.x >= this.dragLayer.maxTranslate.x - this.dragLayer.width / 2
-		) {
+		}else if(translate.x >= this.dragLayer.maxTranslate.x - this.dragLayer.width / 2){
 			direction.x = 1; // Scroll Right
 			speed.x = acceleration.x *
 				Math.abs(
@@ -791,13 +795,13 @@ module.exports = class extends Component {
 				);
 		}
 
-		if (this.autoscrollInterval) {
+		if(this.autoscrollInterval){
 			clearInterval(this.autoscrollInterval);
 			this.autoscrollInterval = null;
 			this.isAutoScrolling = false;
 		}
 
-		if (direction.x !== 0 || direction.y !== 0) {
+		if(direction.x !== 0 || direction.y !== 0){
 			this.autoscrollInterval = setInterval(
 				() => {
 					this.isAutoScrolling = true;
@@ -814,9 +818,9 @@ module.exports = class extends Component {
 				5,
 			);
 		}
-	};
+	}
 
-	getWrappedInstance() {
+	getWrappedInstance(){
 		invariant(
 			this.props.config.withRef,
 			'To access the wrapped instance, you need to pass in {withRef: true} as the second argument of the SortableContainer() call',
@@ -824,7 +828,7 @@ module.exports = class extends Component {
 		return this.refs.wrappedInstance;
 	}
 
-	render() {
+	render(){
 		const { component: Component, config } = this.props;
 
 		const ref = config.withRef ? 'wrappedInstance' : null;
