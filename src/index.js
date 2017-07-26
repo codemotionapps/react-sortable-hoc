@@ -1,8 +1,9 @@
-export SortableContainer from './SortableContainer';
-export SortableElement from './SortableElement';
+const { arrayInsert, arrayMove } = require(`./utils`);
 
-export sortableContainer from './SortableContainer';
-export sortableElement from './SortableElement';
-
-export {arrayInsert,arrayMove} from './utils';
-export DragLayer from './DragLayer';
+module.exports = {
+	SortableContainer: require(`./SortableContainer`),
+	SortableElement: require(`./SortableElement`),
+	DragLayer: require(`./DragLayer`),
+	arrayInsert,
+	arrayMove
+};

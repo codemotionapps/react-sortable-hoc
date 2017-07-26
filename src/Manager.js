@@ -1,45 +1,45 @@
-import find from 'lodash.find';
-import sortBy from 'lodash.sortby';
+const find = require(`lodash.find`);
+const sortBy = require(`lodash.sortby`);
 
-export default class Manager {
-  refs = {}; // eslint-disable-line no-undef
+module.exports = class {
+	refs = {}; // eslint-disable-line no-undef
 
-  add(collection, ref) {
-    if (!this.refs[collection]) {
-      this.refs[collection] = [];
-    }
+	add(collection, ref) {
+		if (!this.refs[collection]) {
+			this.refs[collection] = [];
+		}
 
-    this.refs[collection].push(ref);
-  }
+		this.refs[collection].push(ref);
+	}
 
-  remove(collection, ref) {
-    const index = this.getIndex(collection, ref);
+	remove(collection, ref) {
+		const index = this.getIndex(collection, ref);
 
-    if (index !== -1) {
-      this.refs[collection].splice(index, 1);
-    }
-  }
+		if (index !== -1) {
+			this.refs[collection].splice(index, 1);
+		}
+	}
 
-  isActive() {
-    return this.active;
-  }
+	isActive() {
+		return this.active;
+	}
 
-  getActive() {
-    if (!this.active) return null;
-    const activeRef = this.refs[this.active.collection];
-    if (!activeRef) return null;
-    return find(
-      activeRef,
-      // eslint-disable-next-line eqeqeq
-      ({node}) => node.sortableInfo.index == this.active.index
-    ) || activeRef.slice(-1).pop();
-  }
+	getActive() {
+		if (!this.active) return null;
+		const activeRef = this.refs[this.active.collection];
+		if (!activeRef) return null;
+		return find(
+			activeRef,
+			// eslint-disable-next-line eqeqeq
+			({node}) => node.sortableInfo.index == this.active.index
+		) || activeRef.slice(-1).pop();
+	}
 
-  getIndex(collection, ref) {
-    return this.refs[collection].indexOf(ref);
-  }
+	getIndex(collection, ref) {
+		return this.refs[collection].indexOf(ref);
+	}
 
-  getOrderedRefs(collection = this.active.collection) {
-    return sortBy(this.refs[collection], ({node}) => node.sortableInfo.index);
-  }
-}
+	getOrderedRefs(collection = this.active.collection) {
+		return sortBy(this.refs[collection], ({node}) => node.sortableInfo.index);
+	}
+};
