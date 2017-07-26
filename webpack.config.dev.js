@@ -21,8 +21,7 @@ module.exports = {
 			template: './index.html',
 			inject: 'body' // Inject all scripts into the body
 		}),
-        new webpack.optimize.OccurenceOrderPlugin(),
-        new webpack.HotModuleReplacementPlugin()
+        new webpack.optimize.OccurenceOrderPlugin()
     ],
     resolve: {
 		extensions: ['', '.js', '.jsx', '.scss']
