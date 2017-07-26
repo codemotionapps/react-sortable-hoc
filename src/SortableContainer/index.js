@@ -17,7 +17,40 @@ const {
 	omit
 } = require(`../utils`);
 
-module.exports = class SortableContainer extends Component {
+const propTypes = {
+	axis: PropTypes.oneOf(['x', 'y', 'xy']),
+	config: PropTypes.object,
+	component: PropTypes.func.isRequired,
+	distance: PropTypes.number,
+	dragLayer: PropTypes.object,
+	lockAxis: PropTypes.string,
+	helperClass: PropTypes.string,
+	transitionDuration: PropTypes.number,
+	contentWindow: PropTypes.any,
+	onSortStart: PropTypes.func,
+	onSortMove: PropTypes.func,
+	onSortEnd: PropTypes.func,
+	onDragEnd: PropTypes.func,
+	shouldCancelStart: PropTypes.func,
+	pressDelay: PropTypes.number,
+	useDragHandle: PropTypes.bool,
+	useWindowAsScrollContainer: PropTypes.bool,
+	hideSortableGhost: PropTypes.bool,
+	lockToContainerEdges: PropTypes.bool,
+	lockOffset: PropTypes.oneOfType([
+		PropTypes.number,
+		PropTypes.string,
+		PropTypes.arrayOf(
+			PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+		)
+	]),
+	getContainer: PropTypes.func,
+	getHelperDimensions: PropTypes.func
+};
+
+const propKeys = Object.keys(propTypes);
+
+module.exports = class extends Component {
 	constructor(props) {
 		super(props);
 		this.dragLayer = props.dragLayer || new DragLayer();
@@ -72,38 +105,7 @@ module.exports = class SortableContainer extends Component {
 		})
 	};
 
-	static propTypes = { // eslint-disable-line no-undef
-		axis: PropTypes.oneOf(['x', 'y', 'xy']),
-		config: PropTypes.object,
-		component: PropTypes.func.isRequired,
-		distance: PropTypes.number,
-		dragLayer: PropTypes.object,
-		lockAxis: PropTypes.string,
-		helperClass: PropTypes.string,
-		transitionDuration: PropTypes.number,
-		contentWindow: PropTypes.any,
-		onSortStart: PropTypes.func,
-		onSortMove: PropTypes.func,
-		onSortEnd: PropTypes.func,
-		onDragEnd: PropTypes.func,
-		shouldCancelStart: PropTypes.func,
-		pressDelay: PropTypes.number,
-		useDragHandle: PropTypes.bool,
-		useWindowAsScrollContainer: PropTypes.bool,
-		hideSortableGhost: PropTypes.bool,
-		lockToContainerEdges: PropTypes.bool,
-		lockOffset: PropTypes.oneOfType([
-			PropTypes.number,
-			PropTypes.string,
-			PropTypes.arrayOf(
-				PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-			)
-		]),
-		getContainer: PropTypes.func,
-		getHelperDimensions: PropTypes.func
-	};
-
-	static propKeys = Object.keys(SortableContainer.propTypes); // eslint-disable-line no-undef
+	static propTypes = propTypes;
 
 	static childContextTypes = { // eslint-disable-line no-undef
 		manager: PropTypes.object.isRequired
@@ -827,6 +829,6 @@ module.exports = class SortableContainer extends Component {
 
 		const ref = config.withRef ? 'wrappedInstance' : null;
 
-		return <Component ref={ref} {...omit(this.props, SortableContainer.propKeys)} />;
+		return <Component ref={ref} {...omit(this.props, propKeys)} />;
 	}
 };

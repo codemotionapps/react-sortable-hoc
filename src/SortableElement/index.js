@@ -6,20 +6,22 @@ const { findDOMNode } = require(`react-dom`);
 
 const { omit } = require(`../utils`);
 
-module.exports = class SortableElement extends Component {
+const propTypes = {
+	index: PropTypes.number.isRequired,
+	config: PropTypes.object,
+	component: PropTypes.func.isRequired,
+	collection: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+	disabled: PropTypes.bool
+};
+
+const propKeys = Object.keys(propTypes);
+
+module.exports = class extends Component {
 	static contextTypes = { // eslint-disable-line no-undef
 		manager: PropTypes.object.isRequired
 	};
 
-	static propTypes = { // eslint-disable-line no-undef
-		index: PropTypes.number.isRequired,
-		config: PropTypes.object,
-		component: PropTypes.func.isRequired,
-		collection: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-		disabled: PropTypes.bool
-	};
-
-	static propKeys = Object.keys(SortableElement.propTypes); // eslint-disable-line no-undef
+	static propTypes = propTypes;
 
 	static defaultProps = { // eslint-disable-line no-undef
 		collection: 0,
@@ -87,6 +89,6 @@ module.exports = class SortableElement extends Component {
 
 		const ref = config.withRef ? 'wrappedInstance' : null;
 
-		return <Component ref={ref} {...omit(this.props, SortableElement.propKeys)} />;
+		return <Component ref={ref} {...omit(this.props, propKeys)} />;
 	}
 };
