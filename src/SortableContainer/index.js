@@ -725,7 +725,7 @@ module.exports = class extends Component {
 			] = `translate3d(${translate.x}px,${translate.y}px,0)`;
 		}
 
-		if(this.newIndex){
+		if(!this.newIndex){
 			this.newIndex = this.index;
 		}
 	}
