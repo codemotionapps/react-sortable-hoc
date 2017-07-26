@@ -17,7 +17,7 @@ const {
 	omit
 } = require(`../utils`);
 
-module.exports = class extends Component {
+module.exports = class SortableContainer extends Component {
 	constructor(props) {
 		super(props);
 		this.dragLayer = props.dragLayer || new DragLayer();
@@ -102,6 +102,8 @@ module.exports = class extends Component {
 		getContainer: PropTypes.func,
 		getHelperDimensions: PropTypes.func
 	};
+
+	static propKeys = Object.keys(SortableContainer.propTypes); // eslint-disable-line no-undef
 
 	static childContextTypes = { // eslint-disable-line no-undef
 		manager: PropTypes.object.isRequired
@@ -825,34 +827,6 @@ module.exports = class extends Component {
 
 		const ref = config.withRef ? 'wrappedInstance' : null;
 
-		return <Component
-			ref={ref}
-			{...omit(
-				this.props,
-				'component',
-				'dragLayer',
-				'config',
-				'contentWindow',
-				'useWindowAsScrollContainer',
-				'distance',
-				'helperClass',
-				'hideSortableGhost',
-				'transitionDuration',
-				'useDragHandle',
-				'pressDelay',
-				'pressThreshold',
-				'shouldCancelStart',
-				'onSortStart',
-				'onSortSwap',
-				'onSortMove',
-				'onSortEnd',
-				'axis',
-				'lockAxis',
-				'lockOffset',
-				'lockToContainerEdges',
-				'getContainer',
-				'getHelperDimensions',
-			)}
-		/>;
+		return <Component ref={ref} {...omit(this.props, SortableContainer.propKeys)} />;
 	}
 };
