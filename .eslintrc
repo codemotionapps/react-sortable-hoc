@@ -1,9 +1,7 @@
 {
-  "extends": "react-app",
   "rules": {
     "prefer-const": ["error"],
     "comma-dangle": ["warn", "never"],
-    "semi": ["error", "always"],
     "no-mixed-operators": [
       "warn",
       {

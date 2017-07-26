@@ -1,241 +1,241 @@
-import {
-  events,
-  vendorPrefix,
-  getOffset,
-  getElementMargin,
-  clamp
-} from '../utils';
-import {closestRect, updateDistanceBetweenContainers} from './utils';
+const {
+	events,
+	vendorPrefix,
+	getOffset,
+	getElementMargin,
+	clamp
+} = require(`../utils`);
 
-export default class DragLayer {
-  helper = null; // eslint-disable-line no-undef
-  lists = []; // eslint-disable-line no-undef
+const { closestRect, updateDistanceBetweenContainers } = require(`./utils`);
 
-  addRef(list) {
-    this.lists.push(list);
-  }
+module.exports = class {
+	helper = null; // eslint-disable-line no-undef
+	lists = []; // eslint-disable-line no-undef
 
-  removeRef(list) {
-    const i = this.lists.indexOf(list);
-    if (i !== -1) {
-      this.lists.splice(i, 1);
-    }
-  }
+	addRef(list) {
+		this.lists.push(list);
+	}
 
-  startDrag(parent, list, e) {
-	  console.debug(`DragLayer:startDrag`);
-    const offset = getOffset(e);
-    const activeNode = list.manager.getActive();
+	removeRef(list) {
+		const i = this.lists.indexOf(list);
+		if (i !== -1) {
+			this.lists.splice(i, 1);
+		}
+	}
 
-    if (activeNode) {
-      const {
-        axis,
-        getHelperDimensions,
-        useWindowAsScrollContainer
-      } = list.props;
-      const {node, collection} = activeNode;
-      const {index} = node.sortableInfo;
-      const margin = getElementMargin(node);
-      const containerBoundingRect = list.container.getBoundingClientRect();
-      const dimensions = getHelperDimensions({index, node, collection});
+	startDrag(parent, list, e) {
+		const offset = getOffset(e);
+		const activeNode = list.manager.getActive();
 
-      this.width = dimensions.width;
-      this.height = dimensions.height;
-      this.marginOffset = {
-        x: margin.left + margin.right,
-        y: Math.max(margin.top, margin.bottom)
-      };
-      this.boundingClientRect = node.getBoundingClientRect();
-      this.containerBoundingRect = containerBoundingRect;
-      this.currentList = list;
+		if (activeNode) {
+			const {
+				axis,
+				getHelperDimensions,
+				useWindowAsScrollContainer
+			} = list.props;
+			const {node, collection} = activeNode;
+			const {index} = node.sortableInfo;
+			const margin = getElementMargin(node);
+			const containerBoundingRect = list.container.getBoundingClientRect();
+			const dimensions = getHelperDimensions({index, node, collection});
 
-      this.axis = {
-        x: axis.indexOf('x') >= 0,
-        y: axis.indexOf('y') >= 0
-      };
-      this.offsetEdge = list.getEdgeOffset(node);
-      this.initialOffset = offset;
-      this.distanceBetweenContainers = {
-        x: 0,
-        y: 0
-      };
+			this.width = dimensions.width;
+			this.height = dimensions.height;
+			this.marginOffset = {
+				x: margin.left + margin.right,
+				y: Math.max(margin.top, margin.bottom)
+			};
+			this.boundingClientRect = node.getBoundingClientRect();
+			this.containerBoundingRect = containerBoundingRect;
+			this.currentList = list;
 
-      const fields = node.querySelectorAll('input, textarea, select');
-      const clonedNode = node.cloneNode(true);
-      const clonedFields = [
-        ...clonedNode.querySelectorAll('input, textarea, select')
-      ]; // Convert NodeList to Array
+			this.axis = {
+				x: axis.indexOf('x') >= 0,
+				y: axis.indexOf('y') >= 0
+			};
+			this.offsetEdge = list.getEdgeOffset(node);
+			this.initialOffset = offset;
+			this.distanceBetweenContainers = {
+				x: 0,
+				y: 0
+			};
 
-      clonedFields.forEach((field, index) => {
-        if (field.type !== 'file' && fields[index]) {		
-          field.value = fields[index].value;
-        }
-      });
+			const fields = node.querySelectorAll('input, textarea, select');
+			const clonedNode = node.cloneNode(true);
+			const clonedFields = [
+				...clonedNode.querySelectorAll('input, textarea, select')
+			]; // Convert NodeList to Array
 
-      this.helper = parent.appendChild(clonedNode);
+			clonedFields.forEach((field, index) => {
+				if (field.type !== 'file' && fields[index]) {		
+					field.value = fields[index].value;
+				}
+			});
 
-      this.helper.style.position = 'fixed';
-      this.helper.style.top = `${this.boundingClientRect.top - margin.top}px`;
-      this.helper.style.left = `${this.boundingClientRect.left -
-        margin.left}px`;
-      this.helper.style.width = `${this.width}px`;
-      this.helper.style.height = `${this.height}px`;
-      this.helper.style.boxSizing = 'border-box';
-      this.helper.style.pointerEvents = 'none';
+			this.helper = parent.appendChild(clonedNode);
 
-      this.minTranslate = {};
-      this.maxTranslate = {};
-      if (this.axis.x) {
-        this.minTranslate.x = (useWindowAsScrollContainer
-          ? 0
-          : containerBoundingRect.left) -
-          this.boundingClientRect.left -
-          this.width / 2;
-        this.maxTranslate.x = (useWindowAsScrollContainer
-          ? list.contentWindow.innerWidth
-          : containerBoundingRect.left + containerBoundingRect.width) -
-          this.boundingClientRect.left -
-          this.width / 2;
-      }
-      if (this.axis.y) {
-        this.minTranslate.y = (useWindowAsScrollContainer
-          ? 0
-          : containerBoundingRect.top) -
-          this.boundingClientRect.top -
-          this.height / 2;
-        this.maxTranslate.y = (useWindowAsScrollContainer
-          ? list.contentWindow.innerHeight
-          : containerBoundingRect.top + containerBoundingRect.height) -
-          this.boundingClientRect.top -
-          this.height / 2;
-      }
+			this.helper.style.position = 'fixed';
+			this.helper.style.top = `${this.boundingClientRect.top - margin.top}px`;
+			this.helper.style.left = `${this.boundingClientRect.left -
+				margin.left}px`;
+			this.helper.style.width = `${this.width}px`;
+			this.helper.style.height = `${this.height}px`;
+			this.helper.style.boxSizing = 'border-box';
+			this.helper.style.pointerEvents = 'none';
 
-      this.listenerNode = e.touches ? node : list.contentWindow;
-      events.move.forEach(eventName =>
-        this.listenerNode.addEventListener(
-          eventName,
-          this.handleSortMove,
-          false,
-        ));
-      events.end.forEach(eventName =>
-        this.listenerNode.addEventListener(
-          eventName,
-          this.handleSortEnd,
-          false,
-        ));
+			this.minTranslate = {};
+			this.maxTranslate = {};
+			if (this.axis.x) {
+				this.minTranslate.x = (useWindowAsScrollContainer
+					? 0
+					: containerBoundingRect.left) -
+					this.boundingClientRect.left -
+					this.width / 2;
+				this.maxTranslate.x = (useWindowAsScrollContainer
+					? list.contentWindow.innerWidth
+					: containerBoundingRect.left + containerBoundingRect.width) -
+					this.boundingClientRect.left -
+					this.width / 2;
+			}
+			if (this.axis.y) {
+				this.minTranslate.y = (useWindowAsScrollContainer
+					? 0
+					: containerBoundingRect.top) -
+					this.boundingClientRect.top -
+					this.height / 2;
+				this.maxTranslate.y = (useWindowAsScrollContainer
+					? list.contentWindow.innerHeight
+					: containerBoundingRect.top + containerBoundingRect.height) -
+					this.boundingClientRect.top -
+					this.height / 2;
+			}
 
-      return activeNode;
-    }
-    return false;
-  }
+			this.listenerNode = e.touches ? node : list.contentWindow;
+			events.move.forEach(eventName =>
+				this.listenerNode.addEventListener(
+					eventName,
+					this.handleSortMove,
+					false,
+				));
+			events.end.forEach(eventName =>
+				this.listenerNode.addEventListener(
+					eventName,
+					this.handleSortEnd,
+					false,
+				));
 
-  stopDrag() {
-    this.handleSortEnd();
-  }
+			return activeNode;
+		}
+		return false;
+	}
 
-  handleSortMove = e => { // eslint-disable-line no-undef
-    e.preventDefault(); // Prevent scrolling on mobile
-    this.updatePosition(e);
-    this.updateTargetContainer(e);
-    if (this.currentList) {
-      this.currentList.handleSortMove(e);
-    }
-  };
+	stopDrag() {
+		this.handleSortEnd();
+	}
 
-  handleSortEnd = e => { // eslint-disable-line no-undef
-    if (this.listenerNode) {
-      events.move.forEach(eventName =>
-        this.listenerNode.removeEventListener(eventName, this.handleSortMove));
-      events.end.forEach(eventName =>
-        this.listenerNode.removeEventListener(eventName, this.handleSortEnd));
-    }
+	handleSortMove = e => { // eslint-disable-line no-undef
+		e.preventDefault(); // Prevent scrolling on mobile
+		this.updatePosition(e);
+		this.updateTargetContainer(e);
+		if (this.currentList) {
+			this.currentList.handleSortMove(e);
+		}
+	};
 
-    if (typeof this.onDragEnd === 'function') {
-      this.onDragEnd();
-    }
-    // Remove the helper from the DOM
-    if (this.helper) {
-      this.helper.parentNode.removeChild(this.helper);
-      this.helper = null;
-      this.currentList.handleSortEnd(e);
-    }
-  };
+	handleSortEnd = e => { // eslint-disable-line no-undef
+		if (this.listenerNode) {
+			events.move.forEach(eventName =>
+				this.listenerNode.removeEventListener(eventName, this.handleSortMove));
+			events.end.forEach(eventName =>
+				this.listenerNode.removeEventListener(eventName, this.handleSortEnd));
+		}
 
-  updatePosition(e) {
-    const {lockAxis, lockToContainerEdges} = this.currentList.props;
-    const offset = getOffset(e);
-    const translate = {
-      x: offset.x - this.initialOffset.x,
-      y: offset.y - this.initialOffset.y
-    };
-    // Adjust for window scroll
-    translate.y -= (window.scrollY - this.currentList.initialWindowScroll.top);
-    translate.x -= (window.scrollX - this.currentList.initialWindowScroll.left);
-    
-    this.translate = translate;
-    this.delta = offset;
+		if (typeof this.onDragEnd === 'function') {
+			this.onDragEnd();
+		}
+		// Remove the helper from the DOM
+		if (this.helper) {
+			this.helper.parentNode.removeChild(this.helper);
+			this.helper = null;
+			this.currentList.handleSortEnd(e);
+		}
+	};
 
-    if (lockToContainerEdges) {
-      const [
-        minLockOffset,
-        maxLockOffset
-      ] = this.currentList.getLockPixelOffsets();
-      const minOffset = {
-        x: this.width / 2 - minLockOffset.x,
-        y: this.height / 2 - minLockOffset.y
-      };
-      const maxOffset = {
-        x: this.width / 2 - maxLockOffset.x,
-        y: this.height / 2 - maxLockOffset.y
-      };
+	updatePosition(e) {
+		const {lockAxis, lockToContainerEdges} = this.currentList.props;
+		const offset = getOffset(e);
+		const translate = {
+			x: offset.x - this.initialOffset.x,
+			y: offset.y - this.initialOffset.y
+		};
+		// Adjust for window scroll
+		translate.y -= (window.scrollY - this.currentList.initialWindowScroll.top);
+		translate.x -= (window.scrollX - this.currentList.initialWindowScroll.left);
+		
+		this.translate = translate;
+		this.delta = offset;
 
-      translate.x = clamp(
-        translate.x,
-        this.minTranslate.x + minOffset.x,
-        this.maxTranslate.x - maxOffset.x,
-      );
-      translate.y = clamp(
-        translate.y,
-        this.minTranslate.y + minOffset.y,
-        this.maxTranslate.y - maxOffset.y,
-      );
-    }
+		if (lockToContainerEdges) {
+			const [
+				minLockOffset,
+				maxLockOffset
+			] = this.currentList.getLockPixelOffsets();
+			const minOffset = {
+				x: this.width / 2 - minLockOffset.x,
+				y: this.height / 2 - minLockOffset.y
+			};
+			const maxOffset = {
+				x: this.width / 2 - maxLockOffset.x,
+				y: this.height / 2 - maxLockOffset.y
+			};
 
-    if (lockAxis === 'x') {
-      translate.y = 0;
-    } else if (lockAxis === 'y') {
-      translate.x = 0;
-    }
+			translate.x = clamp(
+				translate.x,
+				this.minTranslate.x + minOffset.x,
+				this.maxTranslate.x - maxOffset.x,
+			);
+			translate.y = clamp(
+				translate.y,
+				this.minTranslate.y + minOffset.y,
+				this.maxTranslate.y - maxOffset.y,
+			);
+		}
 
-    this.helper.style[
-      `${vendorPrefix}Transform`
-    ] = `translate3d(${translate.x}px,${translate.y}px, 0)`;
-  }
+		if (lockAxis === 'x') {
+			translate.y = 0;
+		} else if (lockAxis === 'y') {
+			translate.x = 0;
+		}
 
-  updateTargetContainer(e) {
-    const {pageX, pageY} = this.delta;
-    const closest = this.lists[
-      closestRect(pageX, pageY, this.lists.map(l => l.container))
-    ];
-    const {item} = this.currentList.manager.active;
-    this.active = item;
-    if (closest !== this.currentList) {
-      this.distanceBetweenContainers = updateDistanceBetweenContainers(
-        this.distanceBetweenContainers,
-        closest,
-        this.currentList,
-        {
-          width: this.width,
-          height: this.height
-        },
-      );
-      this.currentList.handleSortEnd(e, closest);
-      this.currentList = closest;
-      this.currentList.manager.active = {
-        ...this.currentList.getClosestNode(e),
-        item
-      };
-      this.currentList.handlePress(e);
-    }
-  }
-}
+		this.helper.style[
+			`${vendorPrefix}Transform`
+		] = `translate3d(${translate.x}px,${translate.y}px, 0)`;
+	}
+
+	updateTargetContainer(e) {
+		const {pageX, pageY} = this.delta;
+		const closest = this.lists[
+			closestRect(pageX, pageY, this.lists.map(l => l.container))
+		];
+		const {item} = this.currentList.manager.active;
+		this.active = item;
+		if (closest !== this.currentList) {
+			this.distanceBetweenContainers = updateDistanceBetweenContainers(
+				this.distanceBetweenContainers,
+				closest,
+				this.currentList,
+				{
+					width: this.width,
+					height: this.height
+				},
+			);
+			this.currentList.handleSortEnd(e, closest);
+			this.currentList = closest;
+			this.currentList.manager.active = {
+				...this.currentList.getClosestNode(e),
+				item
+			};
+			this.currentList.handlePress(e);
+		}
+	}
+};

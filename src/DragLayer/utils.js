@@ -1,29 +1,31 @@
-import {clamp} from '../utils';
+/* eslint eol-last: ["error", "always"] */
 
-export function distanceRect(x, y, rect) {
-  const dx = x - clamp(x, rect.left, rect.right);
-  const dy = y - clamp(y, rect.top, rect.bottom);
+const { clamp } = require(`../utils`);
 
-  return Math.sqrt(dx * dx + dy * dy);
+function distanceRect(x, y, rect){
+	const dx = x - clamp(x, rect.left, rect.right);
+	const dy = y - clamp(y, rect.top, rect.bottom);
+
+	return Math.sqrt(dx * dx + dy * dy);
 }
 
 export function closestRect(x, y, containers) {
-  const distances = containers.map(c =>
-    distanceRect(x, y, c.getBoundingClientRect()));
-  return distances.indexOf(Math.min(...distances));
+	const distances = containers.map(c =>
+		distanceRect(x, y, c.getBoundingClientRect()));
+	return distances.indexOf(Math.min(...distances));
 }
 
-export function getDelta(rect1, rect2) {
-  return {
-    x: rect1.left - rect2.left,
-    y: rect1.top - rect2.top
-  };
+function getDelta(rect1, rect2){
+	return {
+		x: rect1.left - rect2.left,
+		y: rect1.top - rect2.top
+	};
 }
 
 export function updateDistanceBetweenContainers(
-  distance,
-  container1,
-  container2,
+	distance,
+	container1,
+	container2,
 ) {
   const {x, y} = distance;
   const d = getDelta(
