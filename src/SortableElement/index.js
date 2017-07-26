@@ -6,7 +6,7 @@ const { findDOMNode } = require(`react-dom`);
 
 const { omit } = require(`../utils`);
 
-module.exports = class extends Component {
+module.exports = class SortableElement extends Component {
 	static contextTypes = { // eslint-disable-line no-undef
 		manager: PropTypes.object.isRequired
 	};
@@ -19,20 +19,22 @@ module.exports = class extends Component {
 		disabled: PropTypes.bool
 	};
 
+	static propKeys = Object.keys(SortableElement.propTypes); // eslint-disable-line no-undef
+
 	static defaultProps = { // eslint-disable-line no-undef
 		collection: 0,
 		config: {withRef: false}
 	};
 
-	componentDidMount() {
-		const {collection, disabled, index} = this.props;
+	componentDidMount(){
+		const { collection, disabled, index } = this.props;
 
-		if (!disabled) {
+		if(!disabled){
 			this.setDraggable(collection, index);
 		}
 	}
 
-	componentWillReceiveProps(nextProps) {
+	componentWillReceiveProps(nextProps){
 		if (this.props.index !== nextProps.index && this.node) {
 			this.node.sortableInfo.index = nextProps.index;
 		}
@@ -49,13 +51,13 @@ module.exports = class extends Component {
 		}
 	}
 
-	componentWillUnmount() {
+	componentWillUnmount(){
 		const {collection, disabled} = this.props;
 
 		if (!disabled) this.removeDraggable(collection);
 	}
 
-	setDraggable(collection, index) {
+	setDraggable(collection, index){
 		const node = (this.node = findDOMNode(this));
 
 		node.sortableInfo = {
@@ -68,11 +70,11 @@ module.exports = class extends Component {
 		this.context.manager.add(collection, this.ref);
 	}
 
-	removeDraggable(collection) {
+	removeDraggable(collection){
 		this.context.manager.remove(collection, this.ref);
 	}
 
-	getWrappedInstance() {
+	getWrappedInstance(){
 		invariant(
 			this.props.config.withRef,
 			'To access the wrapped instance, you need to pass in {withRef: true} as the second argument of the SortableElement() call'
@@ -80,14 +82,11 @@ module.exports = class extends Component {
 		return this.refs.wrappedInstance;
 	}
 
-	render() {
+	render(){
 		const { component: Component, config } = this.props;
 
 		const ref = config.withRef ? 'wrappedInstance' : null;
 
-		return <Component
-			ref={ref}
-			{...omit(this.props, 'component', 'config', 'collection', 'disabled', 'index')}
-		/>;
+		return <Component ref={ref} {...omit(this.props, SortableElement.propKeys)} />;
 	}
 };
