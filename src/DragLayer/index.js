@@ -141,7 +141,7 @@ module.exports = class {
 		if(this.currentList){
 			this.currentList.handleSortMove(e);
 		}
-	};
+	}
 
 	handleSortEnd(e){
 		if(this.listenerNode){
@@ -162,7 +162,7 @@ module.exports = class {
 			this.helper = null;
 			this.currentList.handleSortEnd(e);
 		}
-	};
+	}
 
 	updatePosition(e){
 		const {lockAxis, lockToContainerEdges} = this.currentList.props;

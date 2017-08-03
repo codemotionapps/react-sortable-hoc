@@ -771,9 +771,7 @@ module.exports = class extends Component {
 						translate.x) /
 						this.dragLayer.width,
 				);
-		} else if (
-			translate.y <= this.dragLayer.minTranslate.y + this.dragLayer.height / 2
-		) {
+		}else if(translate.y <= this.dragLayer.minTranslate.y + this.dragLayer.height / 2){
 			direction.y = -1; // Scroll Up
 			speed.y = acceleration.y *
 				Math.abs(
@@ -782,9 +780,7 @@ module.exports = class extends Component {
 						this.dragLayer.minTranslate.y) /
 						this.dragLayer.height,
 				);
-		} else if (
-			translate.x <= this.dragLayer.minTranslate.x + this.dragLayer.width / 2
-		) {
+		}else if(translate.x <= this.dragLayer.minTranslate.x + this.dragLayer.width / 2){
 			direction.x = -1; // Scroll Left
 			speed.x = acceleration.x *
 				Math.abs(
@@ -802,21 +798,18 @@ module.exports = class extends Component {
 		}
 
 		if(direction.x !== 0 || direction.y !== 0){
-			this.autoscrollInterval = setInterval(
-				() => {
-					this.isAutoScrolling = true;
-					const offset = {
-						left: 1 * speed.x * direction.x,
-						top: 1 * speed.y * direction.y
-					};
-					this.scrollContainer.scrollTop += offset.top;
-					this.scrollContainer.scrollLeft += offset.left;
-					// this.dragLayer.translate.x += offset.left;
-					// this.dragLayer.translate.y += offset.top;
-					this.animateNodes();
-				},
-				5,
-			);
+			this.autoscrollInterval = setInterval(() => {
+				this.isAutoScrolling = true;
+				const offset = {
+					left: 1 * speed.x * direction.x,
+					top: 1 * speed.y * direction.y
+				};
+				this.scrollContainer.scrollTop += offset.top;
+				this.scrollContainer.scrollLeft += offset.left;
+				// this.dragLayer.translate.x += offset.left;
+				// this.dragLayer.translate.y += offset.top;
+				this.animateNodes();
+			}, 5);
 		}
 	}
 
