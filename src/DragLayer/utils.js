@@ -31,10 +31,10 @@ export function updateDistanceBetweenContainers(
   const d = getDelta(
     ...[container1, container2].map(c => c.container.getBoundingClientRect()),
   );
-  const scrollDX = container2.scrollContainer.scrollLeft - container1.scrollContainer.scrollLeft
-  const scrollDY = container2.scrollContainer.scrollTop - container1.scrollContainer.scrollTop
+  const scrollDX = container2.scrollContainer.scrollLeft - container1.scrollContainer.scrollLeft;
+  const scrollDY = container2.scrollContainer.scrollTop - container1.scrollContainer.scrollTop;
   return {
     x: x + d.x + scrollDX,
-    y: y + d.y + scrollDY,
+    y: y + d.y + scrollDY
   };
 }
