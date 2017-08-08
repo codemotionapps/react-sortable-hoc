@@ -29,29 +29,18 @@ export function omit(obj, keysToOmit) {
 	}, {});
 }
 
+// export const events = { // With touch
+// 	start: ['touchstart', 'mousedown'],
+// 	move: ['touchmove', 'mousemove'],
+// 	end: ['touchend', 'touchcancel', 'mouseup']
+// };
+
 export const events = {
-	start: ['touchstart', 'mousedown'],
-	move: ['touchmove', 'mousemove'],
-	end: ['touchend', 'touchcancel', 'mouseup']
+	start: ['mousedown'],
+	move: ['mousemove'],
+	end: ['mouseup']
 };
 
-export const vendorPrefix = (function() {
-	if (typeof window === 'undefined' || typeof document === 'undefined') return ''; // server environment
-	// fix for:
-	//    https://bugzilla.mozilla.org/show_bug.cgi?id=548397
-	//    window.getComputedStyle() returns null inside an iframe with display: none
-	// in this case return an array with a fake mozilla style in it.
-	const styles = window.getComputedStyle(document.documentElement, '') || ['-moz-hidden-iframe'];
-	const pre = (Array.prototype.slice.call(styles).join('').match(/-(moz|webkit|ms)-/) || (styles.OLink === '' && ['', 'o']))[1];
-
-	switch (pre) {
-		case 'ms':
-			return 'ms';
-		default:
-			return pre && pre.length ? pre[0].toUpperCase() + pre.substr(1) : '';
-	}
-})();
-	
 export function getOffset(e) {
 	const event = e.touches ? e.touches[0] : e;
 	return {
@@ -95,4 +84,23 @@ export function getElementMargin(element) {
 		bottom: getCSSPixelValue(style.marginBottom),
 		left: getCSSPixelValue(style.marginLeft)
 	};
+}
+
+export function dragBoundary(axis, item, next){
+	let size;
+	let margin;
+
+	const style = getComputedStyle(item);
+	if(axis === "x"){
+		margin = style[next < 0 ? "margin-left" : "margin-right"];
+		size = style.width;
+	}else{
+		margin = style[next < 0 ? "margin-top" : "margin-bottom"];
+		size = style.height;
+	}
+
+	size = parseInt(size, 10);
+	margin = parseInt(margin, 10);
+
+	return (size / 2 + margin) * next;
 }
