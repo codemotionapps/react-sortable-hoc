@@ -27,14 +27,20 @@ export function updateDistanceBetweenContainers(
 	container1,
 	container2,
 ) {
-  const {x, y} = distance;
-  const d = getDelta(
-    ...[container1, container2].map(c => c.container.getBoundingClientRect()),
-  );
-  const scrollDX = container2.scrollContainer.scrollLeft - container1.scrollContainer.scrollLeft;
-  const scrollDY = container2.scrollContainer.scrollTop - container1.scrollContainer.scrollTop;
-  return {
-    x: x + d.x + scrollDX,
-    y: y + d.y + scrollDY
-  };
+	const {x, y} = distance;
+	const d = getDelta(
+		...[container1, container2].map(c => c.container.getBoundingClientRect()),
+	);
+	const scrollDX = container2.scrollContainer.scrollLeft - container1.scrollContainer.scrollLeft;
+	const scrollDY = do{
+		if(container2.scrollContainer.scrollTop > container1.scrollContainer.scrollTop){
+			container2.scrollContainer.scrollTop - container1.scrollContainer.scrollTop;
+		}else{
+			container1.scrollContainer.scrollTop - container2.scrollContainer.scrollTop;
+		}
+	};
+	return {
+		x: x + d.x + scrollDX,
+		y: y + d.y + scrollDY
+	};
 }

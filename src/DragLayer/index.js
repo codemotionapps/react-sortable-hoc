@@ -1,18 +1,24 @@
 const {
 	events,
-	vendorPrefix,
 	getOffset,
-	getElementMargin,
-	clamp
+	getElementMargin
 } = require(`../utils`);
 
-const { closestRect, updateDistanceBetweenContainers } = require(`./utils`);
+const {
+	closestRect,
+	updateDistanceBetweenContainers
+} = require(`./utils`);
 
 module.exports = class {
-	helper = null; // eslint-disable-line no-undef
-	lists = []; // eslint-disable-line no-undef
+	constructor(componentClassName){
+		this.helper = null;
+		this.lists = [];
 
-	constructor(){
+		if(componentClassName){
+			this.styleElement = document.createElement(`style`);
+			this.styleElement.innerText = `.${componentClassName}{transition:none;}`;
+		}
+
 		this.events = {
 			handleSortMove: this.handleSortMove.bind(this),
 			handleSortEnd: this.handleSortEnd.bind(this)
@@ -30,104 +36,103 @@ module.exports = class {
 		}
 	}
 
+	setTranslateBoundaries(containerBoundingRect, list){
+		const { useWindowAsScrollContainer } = list.props;
+
+		this.minTranslate = {};
+		this.maxTranslate = {};
+
+		if(this.axis === "x"){
+			const containerLeft = do{
+				if(useWindowAsScrollContainer) 0;
+				else containerBoundingRect.left;
+			};
+			const containerWidth = do{
+				if(useWindowAsScrollContainer) list.contentWindow.innerWidth;
+				else containerBoundingRect.left + containerBoundingRect.width;
+			};
+			this.minTranslate.x = containerLeft - this.boundingClientRect.left - this.width / 2;
+			this.maxTranslate.x = containerWidth - this.boundingClientRect.left - this.width / 2;
+		}else{
+			const containerTop = do{
+				if(useWindowAsScrollContainer) 0;
+				else containerBoundingRect.top;
+			};
+			const containerHeight = do{
+				if(useWindowAsScrollContainer) list.contentWindow.innerHeight;
+				else containerBoundingRect.top + containerBoundingRect.height;
+			};
+			this.minTranslate.y = containerTop - this.boundingClientRect.top - this.height / 2;
+			this.maxTranslate.y = containerHeight - this.boundingClientRect.top - this.height / 2;
+		}
+	}
+
 	startDrag(parent, list, e){
 		const offset = getOffset(e);
 		const activeNode = list.manager.getActive();
 
-		if(activeNode){
-			const {
-				axis,
-				getHelperDimensions,
-				useWindowAsScrollContainer
-			} = list.props;
-			const { node, collection } = activeNode;
-			const { index } = node.sortableInfo;
-			const margin = getElementMargin(node);
-			const containerBoundingRect = list.container.getBoundingClientRect();
-			const dimensions = getHelperDimensions({index, node, collection});
+		if(!activeNode) return false;
 
-			this.width = dimensions.width;
-			this.height = dimensions.height;
-			this.marginOffset = {
-				x: margin.left + margin.right,
-				y: Math.max(margin.top, margin.bottom)
-			};
-			this.boundingClientRect = node.getBoundingClientRect();
-			this.containerBoundingRect = containerBoundingRect;
-			this.currentList = list;
+		const {
+			axis,
+			getHelperDimensions
+		} = list.props;
+		const { node, collection } = activeNode;
+		const { index } = node.sortableInfo;
+		const margin = getElementMargin(node);
+		const containerBoundingRect = list.container.getBoundingClientRect();
+		const dimensions = getHelperDimensions({index, node, collection});
 
-			this.axis = {
-				x: axis.indexOf('x') >= 0,
-				y: axis.indexOf('y') >= 0
-			};
-			this.offsetEdge = list.getEdgeOffset(node);
-			this.initialOffset = offset;
-			this.distanceBetweenContainers = {
-				x: 0,
-				y: 0
-			};
+		this.width = dimensions.width;
+		this.height = dimensions.height;
+		this.marginOffset = {
+			x: margin.left + margin.right,
+			y: Math.max(margin.top, margin.bottom)
+		};
+		this.boundingClientRect = node.getBoundingClientRect();
+		this.containerBoundingRect = containerBoundingRect;
+		this.currentList = list;
 
-			const fields = node.querySelectorAll('input, textarea, select');
-			const clonedNode = node.cloneNode(true);
-			const clonedFields = [
-				...clonedNode.querySelectorAll('input, textarea, select')
-			]; // Convert NodeList to Array
+		this.axis = axis;
+		this.offsetEdge = list.getEdgeOffset(node);
+		this.initialOffset = offset;
+		this.distanceBetweenContainers = {
+			x: 0,
+			y: 0
+		};
 
-			clonedFields.forEach((field, index) => {
-				if (field.type !== 'file' && fields[index]) {		
-					field.value = fields[index].value;
-				}
-			});
+		const fields = node.querySelectorAll('input, textarea, select');
+		const clonedNode = node.cloneNode(true);
+		const clonedFields = [
+			...clonedNode.querySelectorAll('input, textarea, select')
+		]; // Convert NodeList to Array
 
-			this.helper = parent.appendChild(clonedNode);
-
-			this.helper.style.position = 'fixed';
-			this.helper.style.top = `${this.boundingClientRect.top - margin.top}px`;
-			this.helper.style.left = `${this.boundingClientRect.left -
-				margin.left}px`;
-			this.helper.style.width = `${this.width}px`;
-			this.helper.style.height = `${this.height}px`;
-			this.helper.style.boxSizing = 'border-box';
-			this.helper.style.pointerEvents = 'none';
-
-			this.minTranslate = {};
-			this.maxTranslate = {};
-			if(this.axis.x){
-				this.minTranslate.x = (useWindowAsScrollContainer
-					? 0
-					: containerBoundingRect.left) -
-					this.boundingClientRect.left -
-					this.width / 2;
-				this.maxTranslate.x = (useWindowAsScrollContainer
-					? list.contentWindow.innerWidth
-					: containerBoundingRect.left + containerBoundingRect.width) -
-					this.boundingClientRect.left -
-					this.width / 2;
+		clonedFields.forEach((field, index) => {
+			if (field.type !== 'file' && fields[index]) {
+				field.value = fields[index].value;
 			}
-			if(this.axis.y){
-				this.minTranslate.y = (useWindowAsScrollContainer
-					? 0
-					: containerBoundingRect.top) -
-					this.boundingClientRect.top -
-					this.height / 2;
-				this.maxTranslate.y = (useWindowAsScrollContainer
-					? list.contentWindow.innerHeight
-					: containerBoundingRect.top + containerBoundingRect.height) -
-					this.boundingClientRect.top -
-					this.height / 2;
-			}
+		});
 
-			this.listenerNode = e.touches ? node : list.contentWindow;
-			events.move.forEach(
-				event => this.listenerNode.addEventListener(event, this.events.handleSortMove, false)
-			);
-			events.end.forEach(
-				event => this.listenerNode.addEventListener(event, this.events.handleSortEnd, false)
-			);
+		this.helper = parent.appendChild(clonedNode);
 
-			return activeNode;
-		}
-		return false;
+		this.helper.style.position = 'fixed';
+		this.helper.style.top = `${this.boundingClientRect.top - margin.top}px`;
+		this.helper.style.left = `${this.boundingClientRect.left -
+			margin.left}px`;
+		this.helper.style.width = `${this.width}px`;
+		this.helper.style.height = `${this.height}px`;
+		this.helper.style.boxSizing = 'border-box';
+		this.helper.style.pointerEvents = 'none';
+
+		list.calculateDragBoundaries(index);
+
+		this.setTranslateBoundaries(containerBoundingRect, list);
+
+		this.listenerNode = e.touches ? node : list.contentWindow;
+		events.move.forEach(event => this.listenerNode.addEventListener(event, this.events.handleSortMove, false));
+		events.end.forEach(event => this.listenerNode.addEventListener(event, this.events.handleSortEnd, false));
+
+		return activeNode;
 	}
 
 	stopDrag(){
@@ -144,13 +149,14 @@ module.exports = class {
 	}
 
 	handleSortEnd(e){
+		if(this.styleElement){
+			document.head.appendChild(this.styleElement);
+			setTimeout(() => document.head.removeChild(this.styleElement));
+		}
+
 		if(this.listenerNode){
-			events.move.forEach(
-				event => this.listenerNode.removeEventListener(event, this.events.handleSortMove)
-			);
-			events.end.forEach(
-				event => this.listenerNode.removeEventListener(event, this.events.handleSortEnd)
-			);
+			events.move.forEach(event => this.listenerNode.removeEventListener(event, this.events.handleSortMove));
+			events.end.forEach(event => this.listenerNode.removeEventListener(event, this.events.handleSortEnd));
 		}
 
 		if(typeof this.onDragEnd === 'function'){
@@ -165,7 +171,6 @@ module.exports = class {
 	}
 
 	updatePosition(e){
-		const {lockAxis, lockToContainerEdges} = this.currentList.props;
 		const offset = getOffset(e);
 		const translate = {
 			x: offset.x - this.initialOffset.x,
@@ -174,45 +179,11 @@ module.exports = class {
 		// Adjust for window scroll
 		translate.y -= (window.scrollY - this.currentList.initialWindowScroll.top);
 		translate.x -= (window.scrollX - this.currentList.initialWindowScroll.left);
-		
+
 		this.translate = translate;
 		this.delta = offset;
 
-		if (lockToContainerEdges) {
-			const [
-				minLockOffset,
-				maxLockOffset
-			] = this.currentList.getLockPixelOffsets();
-			const minOffset = {
-				x: this.width / 2 - minLockOffset.x,
-				y: this.height / 2 - minLockOffset.y
-			};
-			const maxOffset = {
-				x: this.width / 2 - maxLockOffset.x,
-				y: this.height / 2 - maxLockOffset.y
-			};
-
-			translate.x = clamp(
-				translate.x,
-				this.minTranslate.x + minOffset.x,
-				this.maxTranslate.x - maxOffset.x,
-			);
-			translate.y = clamp(
-				translate.y,
-				this.minTranslate.y + minOffset.y,
-				this.maxTranslate.y - maxOffset.y,
-			);
-		}
-
-		if (lockAxis === 'x') {
-			translate.y = 0;
-		} else if (lockAxis === 'y') {
-			translate.x = 0;
-		}
-
-		this.helper.style[
-			`${vendorPrefix}Transform`
-		] = `translate3d(${translate.x}px,${translate.y}px, 0)`;
+		this.helper.style[`transform`] = `translate3d(${translate.x}px,${translate.y}px,0px)`;
 	}
 
 	updateTargetContainer(e){
@@ -234,6 +205,7 @@ module.exports = class {
 			);
 			this.currentList.handleSortEnd(e, closest);
 			this.currentList = closest;
+			this.setTranslateBoundaries(closest.container.getBoundingClientRect(), closest);
 			this.currentList.manager.active = {
 				...this.currentList.getClosestNode(e),
 				item
