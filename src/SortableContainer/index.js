@@ -13,8 +13,8 @@ const {
 	closest,
 	events,
 	getOffset,
-	dragBoundary,
-	getElementMargin,
+	dragComponentSize,
+	cleanTranform,
 	omit
 } = require(`../utils`);
 
@@ -492,8 +492,52 @@ module.exports = class extends Component {
 		return true;
 	}
 
+	calculateReturningBoundary(boundary, name, substract, oldBoundaries){
+		const { bound } = boundary;
+		const boundLast = `${bound}last`;
+
+		if(oldBoundaries[bound]){
+			const sizes = this.dragBoundaries[`${name}Sizes`];
+			const nodes = this.dragBoundaries[`${name}Nodes`];
+
+			const returningNode = nodes.pop();
+			returningNode.style.transform = "";
+
+			let halfs = sizes.pop() + sizes.last();
+			if(!substract) halfs = -halfs;
+
+			this.dragBoundaries[bound] = oldBoundaries[bound] - halfs;
+		}else if(oldBoundaries[boundLast]){
+			this.dragBoundaries[bound] = oldBoundaries[boundLast];
+		}
+	}
+
+	calculateBoundary(boundary, name, axis, marginOffset, substract, oldBoundaries){
+		const { node, next, bound } = boundary;
+		if(node){
+			const sizes = this.dragBoundaries[`${name}Sizes`];
+			const nodes = this.dragBoundaries[`${name}Nodes`];
+			const lastSize = sizes.last();
+
+			const size = dragComponentSize(node, axis, marginOffset, next);
+			sizes.push(size);
+			nodes.push(node);
+
+			let halfs = (lastSize || 0) + size;
+			console.log(halfs, lastSize, size);
+			if(!substract) halfs = -halfs;
+
+			this.dragBoundaries[bound] = (oldBoundaries[bound] || 0) + halfs;
+		}else{
+			const boundLast = `${bound}last`;
+			this.dragBoundaries[boundLast] = oldBoundaries[bound];
+		}
+	}
+
 	calculateDragBoundaries(index, newIndex = index, nodes = this.manager.getOrderedRefs()){
 		const { axis } = this.props;
+		const marginOffset = this.dragLayer.marginOffset[axis];
+
 		const oldDragBoundaries = this.dragBoundaries || {};
 		this.dragBoundaries = {};
 		const differnece = index - newIndex;
@@ -506,80 +550,64 @@ module.exports = class extends Component {
 		const nextNode = newIndex < nodes.length - 1 ? nodes[nextIndex].node : void 0;
 
 		this.dragBoundaries.differnece = differnece;
-		this.dragBoundaries.diffElements = oldDragBoundaries.diffElements;
-		this.dragBoundaries.diffSizes = oldDragBoundaries.diffSizes;
+
+		this.dragBoundaries.aboveNodes = oldDragBoundaries.aboveNodes;
+		this.dragBoundaries.aboveSizes = oldDragBoundaries.aboveSizes;
+
+		this.dragBoundaries.belowNodes = oldDragBoundaries.belowNodes;
+		this.dragBoundaries.belowSizes = oldDragBoundaries.belowSizes;
 
 		if(differnece === 0){
-			if(oldDragBoundaries.diffElements){
-				let node;
-				if(node = oldDragBoundaries.diffElements.pop()) node.style.transform = '';
+			cleanTranform(oldDragBoundaries.aboveNodes);
+			cleanTranform(oldDragBoundaries.belowNodes);
+
+			const aboveNodes = [];
+			const aboveSizes = [];
+
+			const belowNodes = [];
+			const belowSizes = [];
+
+			if(prevNode){
+				const size = dragComponentSize(prevNode, axis, marginOffset, -1);
+				this.dragBoundaries.prev = size;
+				aboveNodes.push(prevNode);
+				aboveSizes.push(size);
 			}
-			this.dragBoundaries.diffElements = [];
-			this.dragBoundaries.diffSizes = [];
 
-			if(prevNode) this.dragBoundaries.prev = dragBoundary(axis, prevNode, -1);
-			if(nextNode) this.dragBoundaries.next = dragBoundary(axis, nextNode, 1);
-		}else if(differnece > 0){ // Moving up the list
-			if(oldDragBoundaries.differnece > differnece){ // Dragging back
-				const oldNode = oldDragBoundaries.diffElements.pop();
-				const oldSize = oldDragBoundaries.diffSizes.pop();
-
-				oldNode.style.transform = '';
-
-				this.dragBoundaries.prev = (oldDragBoundaries.prev || oldDragBoundaries.prevLast) + oldSize;
-				this.dragBoundaries.next = oldDragBoundaries.next + oldSize;
-			}else if(oldDragBoundaries.differnece < differnece){ // Dragging forward
-				let size = 0;
-				const margin = getElementMargin(nextNode);
-
-				if(axis === "x"){
-					const width = nextNode.offsetWidth;
-					const marginOffset = margin.left + margin.right;
-
-					size += width + marginOffset;
-				}else{ // axis === "y"
-					const height = nextNode.offsetHeight;
-					const marginOffset = Math.max(margin.top, margin.bottom);
-
-					size += height + marginOffset;
-				}
-
-				this.dragBoundaries.diffElements.push(nextNode);
-				this.dragBoundaries.diffSizes.push(size);
-
-				this.dragBoundaries[prevNode ? "prev" : "prevLast"] = oldDragBoundaries.prev - size;
-				this.dragBoundaries.next = oldDragBoundaries.next - size;
+			if(nextNode){
+				const size = dragComponentSize(nextNode, axis, marginOffset, 1);
+				this.dragBoundaries.next = size;
+				belowNodes.push(nextNode);
+				belowSizes.push(size);
 			}
-		}else{ // differnece < 0 // Moving down the list
-			if(oldDragBoundaries.differnece < differnece){ // Dragging back
-				const oldNode = oldDragBoundaries.diffElements.pop();
-				const oldSize = oldDragBoundaries.diffSizes.pop();
 
-				oldNode.style.transform = '';
+			this.dragBoundaries.aboveNodes = aboveNodes;
+			this.dragBoundaries.aboveSizes = aboveSizes;
 
-				this.dragBoundaries.prev = oldDragBoundaries.prev - oldSize;
-				this.dragBoundaries.next = (oldDragBoundaries.next || oldDragBoundaries.nextLast) - oldSize;
-			}else if(oldDragBoundaries.differnece > differnece){ // Dragging forward
-				let size = 0;
-				const margin = getElementMargin(prevNode);
+			this.dragBoundaries.belowNodes = belowNodes;
+			this.dragBoundaries.belowSizes = belowSizes;
+		}else{
+			const isMovingUp = differnece > 0;
+			let shouldPop = oldDragBoundaries.differnece > differnece;
+			if(!isMovingUp) shouldPop ^= 1;
 
-				if(axis === "x"){
-					const width = prevNode.offsetWidth;
-					const marginOffset = margin.left + margin.right;
+			const above = {
+				node: prevNode,
+				bound: "prev",
+				next: -1
+			};
+			const below = {
+				node: nextNode,
+				bound: "next",
+				next: 1
+			};
 
-					size += width + marginOffset;
-				}else{ // axis === "y"
-					const height = prevNode.offsetHeight;
-					const marginOffset = Math.max(margin.top, margin.bottom);
-
-					size += height + marginOffset;
-				}
-
-				this.dragBoundaries.diffElements.push(prevNode);
-				this.dragBoundaries.diffSizes.push(size);
-
-				this.dragBoundaries.prev = oldDragBoundaries.prev + size;
-				this.dragBoundaries[nextNode ? "next" : "nextLast"] = oldDragBoundaries.next + size;
+			if(!shouldPop){ // Add nodes
+				this.calculateBoundary(above, "above", axis, marginOffset, isMovingUp, oldDragBoundaries);
+				this.calculateBoundary(below, "below", axis, marginOffset, !isMovingUp, oldDragBoundaries);
+			}else{ // Remove nodes
+				this.calculateReturningBoundary(above, "above", isMovingUp, oldDragBoundaries);
+				this.calculateReturningBoundary(below, "below", !isMovingUp, oldDragBoundaries);
 			}
 		}
 
@@ -631,6 +659,7 @@ module.exports = class extends Component {
 			this.newIndex = this.index;
 		}
 
+		console.log(translate, prev, next, translate < prev, translate > next);
 		if(prev && translate < prev){
 			this.newIndex--;
 			this.animateNode(nodes[this.newIndex].node);
