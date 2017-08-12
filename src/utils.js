@@ -68,7 +68,7 @@ export function clamp(value, min, max) {
 	return value;
 }
 
-function getCSSPixelValue(stringValue) {
+export function getCSSPixelValue(stringValue) {
 	if (stringValue.substr(-2) === 'px') {
 		return parseFloat(stringValue);
 	}
@@ -86,21 +86,18 @@ export function getElementMargin(element) {
 	};
 }
 
-export function dragBoundary(axis, item, next){
-	let size;
-	let margin;
+export function dragComponentSize(node, axis, marginOffset, next){
+	const sizeAttribute = axis === "x" ? "offsetWidth" : "offsetHeight";
 
-	const style = getComputedStyle(item);
-	if(axis === "x"){
-		margin = style[next < 0 ? "margin-left" : "margin-right"];
-		size = style.width;
-	}else{
-		margin = style[next < 0 ? "margin-top" : "margin-bottom"];
-		size = style.height;
+	const size = node[sizeAttribute] + marginOffset;
+	return size * next / 2;
+}
+
+export function cleanTranform(array){
+	if(array && array.length){
+		let element;
+		while(element = array.pop()){
+			element.style.transform = "";
+		}
 	}
-
-	size = parseInt(size, 10);
-	margin = parseInt(margin, 10);
-
-	return (size / 2 + margin) * next;
 }
