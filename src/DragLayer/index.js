@@ -6,7 +6,8 @@ const {
 
 const {
 	closestRect,
-	updateDistanceBetweenContainers
+	updateDistanceBetweenContainers,
+	getCoordinates
 } = require(`./utils`);
 
 module.exports = class {
@@ -95,7 +96,7 @@ module.exports = class {
 
 		this.axis = axis;
 		this.offsetEdge = list.getEdgeOffset(node);
-		this.initialOffset = offset;
+		this.listInitialOffset = this.initialOffset = offset;
 		this.distanceBetweenContainers = {
 			x: 0,
 			y: 0
@@ -123,6 +124,8 @@ module.exports = class {
 		this.helper.style.height = `${this.height}px`;
 		this.helper.style.boxSizing = 'border-box';
 		this.helper.style.pointerEvents = 'none';
+
+		list.host = true;
 
 		list.calculateDragBoundaries(index);
 
@@ -171,19 +174,35 @@ module.exports = class {
 	}
 
 	updatePosition(e){
-		const offset = getOffset(e);
-		const translate = {
-			x: offset.x - this.initialOffset.x,
-			y: offset.y - this.initialOffset.y
+		e ? this.lastMouseEvent = e : e = this.lastMouseEvent;
+
+		const scrollOffset = {
+			y: window.scrollY - this.currentList.initialWindowScroll.top,
+			x: window.scrollX - this.currentList.initialWindowScroll.left
 		};
-		// Adjust for window scroll
-		translate.y -= (window.scrollY - this.currentList.initialWindowScroll.top);
-		translate.x -= (window.scrollX - this.currentList.initialWindowScroll.left);
+
+		const offset = getOffset(e);
+		const position = {
+			x: offset.x - this.initialOffset.x - scrollOffset.x,
+			y: offset.y - this.initialOffset.y - scrollOffset.y
+		};
+
+		this.helper.style[`transform`] = `translate3d(${position.x}px,${position.y}px,0px)`;
+
+		let translate;
+		if(this.listInitialOffset === this.initialOffset){
+			translate = position;
+		}else{
+			const helperOffset = getCoordinates(this.helper, this.currentList);
+
+			translate = { // TODO: Generate only axis
+				x: helperOffset.x - this.listInitialOffset.x - scrollOffset.x,
+				y: helperOffset.y - this.listInitialOffset.y - scrollOffset.y
+			};
+		}
 
 		this.translate = translate;
 		this.delta = offset;
-
-		this.helper.style[`transform`] = `translate3d(${translate.x}px,${translate.y}px,0px)`;
 	}
 
 	updateTargetContainer(e){
@@ -204,13 +223,22 @@ module.exports = class {
 				},
 			);
 			this.currentList.handleSortEnd(e, closest);
-			this.currentList = closest;
+			const list = this.currentList = closest;
 			this.setTranslateBoundaries(closest.container.getBoundingClientRect(), closest);
-			this.currentList.manager.active = {
-				...this.currentList.getClosestNode(e),
+			list.manager.active = {
+				...list.getClosestNode(e),
 				item
 			};
-			this.currentList.handlePress(e);
+			list.handlePress(e);
+			const { offsetLeft: ghostX, offsetTop: ghostY } = list.sortableGhost;
+
+			this.listInitialOffset = {
+				x: ghostX,
+				y: ghostY
+			};
+
+			this.updatePosition(e);
+			list.calculateDragBoundaries(list.index);
 		}
 	}
 };

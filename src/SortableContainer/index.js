@@ -15,6 +15,7 @@ const {
 	getOffset,
 	dragComponentSize,
 	cleanTranform,
+	attribute,
 	omit
 } = require(`../utils`);
 
@@ -31,7 +32,6 @@ const propTypes = {
 	shouldCancelStart: PropTypes.func,
 	pressDelay: PropTypes.number,
 	useWindowAsScrollContainer: PropTypes.bool,
-	hideSortableGhost: PropTypes.bool,
 	lockOffset: PropTypes.oneOfType([
 		PropTypes.number,
 		PropTypes.string,
@@ -43,6 +43,8 @@ const propTypes = {
 	getHelperDimensions: PropTypes.func
 };
 
+const acceleration = 10;
+
 const propKeys = Object.keys(propTypes);
 
 module.exports = class extends Component {
@@ -52,6 +54,7 @@ module.exports = class extends Component {
 		this.dragLayer.addRef(this);
 		this.dragLayer.onDragEnd = props.onDragEnd;
 		this.manager = new Manager();
+		this.host = false;
 		this.events = {
 			start: this.handleStart.bind(this),
 			move: this.handleMove.bind(this),
@@ -69,7 +72,6 @@ module.exports = class extends Component {
 		pressDelay: 0,
 		pressThreshold: 5,
 		useWindowAsScrollContainer: false,
-		hideSortableGhost: true,
 		contentWindow: typeof window !== 'undefined' ? window : null,
 		shouldCancelStart(e){
 			// Cancel sorting if the event target is an `input`, `textarea`, `select` or `option`
@@ -104,11 +106,16 @@ module.exports = class extends Component {
 		};
 	}
 
+	setInitialScroll(axis){
+		this.initialScroll = this.scrollContainer[attribute("scroll", axis)];
+	}
+
 	componentDidMount(){
 		const {
 			contentWindow,
 			getContainer,
-			useWindowAsScrollContainer
+			useWindowAsScrollContainer,
+			axis
 		} = this.props;
 
 		this.container = do{
@@ -129,10 +136,7 @@ module.exports = class extends Component {
 			}
 		};
 
-		this.initialScroll = {
-			top: this.scrollContainer.scrollTop,
-			left: this.scrollContainer.scrollLeft
-		};
+		this.setInitialScroll(axis);
 		this.contentWindow = do{
 			if(typeof contentWindow === 'function'){
 				contentWindow();
@@ -249,10 +253,9 @@ module.exports = class extends Component {
 
 		if(activeNode){
 			const {
-				axis,
 				helperClass,
-				hideSortableGhost,
-				onSortStart
+				onSortStart,
+				axis
 			} = this.props;
 			const { node, collection } = activeNode;
 			const { index } = node.sortableInfo;
@@ -260,22 +263,17 @@ module.exports = class extends Component {
 			this.index = index;
 			this.newIndex = index;
 
-			this.initialScroll = {
-				top: this.scrollContainer.scrollTop,
-				left: this.scrollContainer.scrollLeft
-			};
+			this.setInitialScroll(axis);
 
 			this.initialWindowScroll = {
 				top: window.scrollY,
 				left: window.scrollX
 			};
 
-			if(hideSortableGhost){
-				this.sortableGhost = node;
-				node.style.visibility = 'hidden';
-				node.style.transition = 'none';
-				node.style.opacity = 0;
-			}
+			this.sortableGhost = node;
+			node.style.visibility = 'hidden';
+			node.style.transition = 'none';
+			node.style.opacity = 0;
 
 			if(helperClass){
 				this.dragLayer.helper.classList.add(...helperClass.split(' '));
@@ -299,14 +297,16 @@ module.exports = class extends Component {
 	}
 
 	handleSortEnd(e, newList = null){
-		const { hideSortableGhost, onSortEnd } = this.props;
+		this.host = false;
+
+		const { onSortEnd } = this.props;
 		if(!this.manager.active){
 			console.warn('there is no active node', e);
 			return;
 		}
 		const { collection } = this.manager.active;
 
-		if(hideSortableGhost && this.sortableGhost){
+		if(this.sortableGhost){
 			this.sortableGhost.style.visibility = '';
 			this.sortableGhost.style.opacity = '';
 			this.sortableGhost.style.transition = '';
@@ -326,7 +326,6 @@ module.exports = class extends Component {
 
 		// Stop autoscroll
 		clearInterval(this.autoscrollInterval);
-		this.autoscrollInterval = null;
 
 		// Update state
 		this.manager.active = null;
@@ -524,7 +523,6 @@ module.exports = class extends Component {
 			nodes.push(node);
 
 			let halfs = (lastSize || 0) + size;
-			console.log(halfs, lastSize, size);
 			if(!substract) halfs = -halfs;
 
 			this.dragBoundaries[bound] = (oldBoundaries[bound] || 0) + halfs;
@@ -611,7 +609,7 @@ module.exports = class extends Component {
 			}
 		}
 
-		console.log(this.dragBoundaries);
+		// console.log(this.dragBoundaries);
 	}
 
 	animateNode(node){
@@ -631,169 +629,78 @@ module.exports = class extends Component {
 	}
 
 	animateNodes(){
-		const { hideSortableGhost } = this.props;
-		const nodes = this.manager.getOrderedRefs();
-		const deltaScroll = {
-			left: this.scrollContainer.scrollLeft - this.initialScroll.left,
-			top: this.scrollContainer.scrollTop - this.initialScroll.top
-		};
-
-		const sortingOffset = {
-			left: this.dragLayer.offsetEdge.left - this.dragLayer.distanceBetweenContainers.x + this.dragLayer.translate.x + deltaScroll.left,
-			top: this.dragLayer.offsetEdge.top - this.dragLayer.distanceBetweenContainers.y + this.dragLayer.translate.y + deltaScroll.top
-		};
-
-		const scrollDifference = {
-			top: (window.scrollY - this.initialWindowScroll.top),
-			left: (window.scrollX - this.initialWindowScroll.left)
-		};
+		const { axis } = this.props;
+		const deltaScroll = this.scrollContainer[attribute("scroll", axis)] - this.initialScroll;
 
 		const {
 			prev,
 			next
 		} = this.dragBoundaries;
 
-		const translate = this.dragLayer.translate[this.props.axis];
+		let translate = this.dragLayer.translate[axis];
+
+		if(this.host) translate += deltaScroll;
 
 		if(typeof this.newIndex === "undefined"){
 			this.newIndex = this.index;
 		}
 
-		console.log(translate, prev, next, translate < prev, translate > next);
+		// console.log(translate, prev, next, deltaScroll, this.host);
 		if(prev && translate < prev){
 			this.newIndex--;
+			const nodes = this.manager.getOrderedRefs(); // TODO: Remove for performance
 			this.animateNode(nodes[this.newIndex].node);
 			this.calculateDragBoundaries(this.index, this.newIndex, nodes);
 		}else if(next && translate > next){
 			this.newIndex++;
+			const nodes = this.manager.getOrderedRefs(); // TODO: Remove for performance
 			this.animateNode(nodes[this.newIndex].node);
 			this.calculateDragBoundaries(this.index, this.newIndex, nodes);
 		}
-
-		/*		for(const i in nodes){
-			if(!nodes.hasOwnProperty(i)) continue;
-
-			const { node } = nodes[i];
-			const { index } = node.sortableInfo;
-			const width = node.offsetWidth;
-			const height = node.offsetHeight;
-			const offset = {
-				width: do{
-					if(this.dragLayer.width > width){
-						width / 2;
-					}else{
-						this.dragLayer.width / 2;
-					}
-				},
-				height: do{
-					if(this.dragLayer.height > height){
-						height / 2;
-					}else{
-						this.dragLayer.height / 2;
-					}
-				}
-			};
-
-			const translate = {
-				x: 0,
-				y: 0
-			};
-			let { edgeOffset } = nodes[i];
-
-			// If we haven't cached the node's offsetTop / offsetLeft value
-			if(!edgeOffset){
-				nodes[i].edgeOffset = edgeOffset = this.getEdgeOffset(node);
-			}
-
-			// If the node is the one we're currently animating, skip it
-			if(index === this.index){
-				if(hideSortableGhost){
-					// With windowing libraries such as `react-virtualized`, the sortableGhost node may change while scrolling down and then back up (or vice-versa), so we need to update the reference to the new node just to be safe.
-					this.sortableGhost = node;
-					node.style.visibility = 'hidden';
-					node.style.transition = 'none';
-					node.style.opacity = 0;
-				}
-
-				continue;
-			}
-
-			if(this.axis.x){
-				if(index > this.index && (sortingOffset.left + scrollDifference.left) + offset.width >= edgeOffset.left){
-					translate.x = -(this.dragLayer.width + this.dragLayer.marginOffset.x);
-					this.newIndex = index;
-				}else if(index < this.index && (sortingOffset.left + scrollDifference.left) <= edgeOffset.left + offset.width){
-					translate.x = this.dragLayer.width + this.dragLayer.marginOffset.x;
-
-					if(!this.newIndex){
-						this.newIndex = index;
-					}
-				}
-			}else if(this.axis.y){
-				if(index > this.index && (sortingOffset.top + scrollDifference.top) + offset.height >= edgeOffset.top){
-					translate.y = -(this.dragLayer.height + this.dragLayer.marginOffset.y);
-					this.newIndex = index;
-				}else if(index < this.index && (sortingOffset.top + scrollDifference.top) <= edgeOffset.top + offset.height){
-					translate.y = this.dragLayer.height + this.dragLayer.marginOffset.y;
-
-					if(!this.newIndex){
-						this.newIndex = index;
-					}
-				}
-			}
-			node.style[`transform`] = `translate3d(${translate.x}px,${translate.y}px,0px)`;
-		}*/
 	}
 
 	autoscroll(){
-		const translate = this.dragLayer.translate;
-		const direction = {
-			x: 0,
-			y: 0
-		};
-		const speed = {
-			x: 1,
-			y: 1
-		};
-		const acceleration = {
-			x: 10,
-			y: 10
-		};
+		const { axis } = this.props;
+		let translate = this.dragLayer.translate[axis];
+		let direction = 0;
+		let speed = 1;
+		let scroll = false;
 
-		if(translate.y >= this.dragLayer.maxTranslate.y - this.dragLayer.height / 2){
-			direction.y = 1; // Scroll Down
-			speed.y = acceleration.y * Math.abs((this.dragLayer.maxTranslate.y - this.dragLayer.height / 2 - translate.y) / this.dragLayer.height);
-		}else if(translate.x >= this.dragLayer.maxTranslate.x - this.dragLayer.width / 2){
-			direction.x = 1; // Scroll Right
-			speed.x = acceleration.x * Math.abs((this.dragLayer.maxTranslate.x - this.dragLayer.width / 2 - translate.x) / this.dragLayer.width);
-		}else if(translate.y <= this.dragLayer.minTranslate.y + this.dragLayer.height / 2){
-			direction.y = -1; // Scroll Up
-			speed.y = acceleration.y * Math.abs((translate.y - this.dragLayer.height / 2 - this.dragLayer.minTranslate.y) / this.dragLayer.height);
-		}else if(translate.x <= this.dragLayer.minTranslate.x + this.dragLayer.width / 2){
-			direction.x = -1; // Scroll Left
-			speed.x = acceleration.x * Math.abs((translate.x - this.dragLayer.width / 2 - this.dragLayer.minTranslate.x) / this.dragLayer.width);
+		if(!this.host){
+			const deltaScroll = this.scrollContainer[attribute("scroll", axis)] - this.initialScroll;
+			translate -= deltaScroll;
 		}
 
-		if(this.autoscrollInterval){
-			clearInterval(this.autoscrollInterval);
-			this.autoscrollInterval = null;
-			this.isAutoScrolling = false;
+		const size = axis === "x" ? "width" : "height";
+		if(translate >= this.dragLayer.maxTranslate[axis] - this.dragLayer[size] / 2){
+			direction = 1; // Scroll Down/Right
+			scroll = true;
+			speed = acceleration * Math.abs((this.dragLayer.maxTranslate[axis] - this.dragLayer[size] / 2 - translate) / this.dragLayer[size]);
+		}else if(translate <= this.dragLayer.minTranslate[axis] + this.dragLayer[size] / 2){
+			direction = -1; // Scroll Up/Left
+			scroll = true;
+			speed = acceleration * Math.abs((translate - this.dragLayer[size] / 2 - this.dragLayer.minTranslate[axis]) / this.dragLayer[size]);
 		}
 
-		if(direction.x !== 0 || direction.y !== 0){
-			this.autoscrollInterval = setInterval(() => {
-				this.isAutoScrolling = true;
-				const offset = {
-					left: 1 * speed.x * direction.x,
-					top: 1 * speed.y * direction.y
-				};
-				this.scrollContainer.scrollTop += offset.top;
-				this.scrollContainer.scrollLeft += offset.left;
-				// this.dragLayer.translate.x += offset.left;
-				// this.dragLayer.translate.y += offset.top;
-				this.animateNodes();
-			}, 5);
-		}
+		clearInterval(this.autoscrollInterval);
+
+		if(!scroll) return;
+
+		const scrollDirection = axis === "x" ? "scrollLeft" : "scrollTop";
+		const offset = direction * speed;
+
+		this.autoscrollInterval = setInterval(() => {
+			const lastScroll = this.scrollContainer[scrollDirection];
+
+			this.scrollContainer[scrollDirection] += offset;
+
+			if(this.scrollContainer[scrollDirection] === lastScroll){
+				clearInterval(this.autoscrollInterval);
+			}
+
+			this.dragLayer.updatePosition();
+			this.animateNodes();
+		}, 5);
 	}
 
 	getWrappedInstance(){

@@ -87,7 +87,7 @@ export function getElementMargin(element) {
 }
 
 export function dragComponentSize(node, axis, marginOffset, next){
-	const sizeAttribute = axis === "x" ? "offsetWidth" : "offsetHeight";
+	const sizeAttribute = attribute("offset", axis);
 
 	const size = node[sizeAttribute] + marginOffset;
 	return size * next / 2;
@@ -99,5 +99,14 @@ export function cleanTranform(array){
 		while(element = array.pop()){
 			element.style.transform = "";
 		}
+	}
+}
+
+export function attribute(attr, axis){
+	switch(attr){
+		case "scroll":
+			return axis === "x" ? "scrollLeft" : "scrollTop";
+		case "offset":
+			return axis === "x" ? "offsetWidth" : "offsetHeight";
 	}
 }
