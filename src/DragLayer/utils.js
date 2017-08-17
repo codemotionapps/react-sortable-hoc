@@ -44,3 +44,11 @@ export function updateDistanceBetweenContainers(
 		y: y + d.y + scrollDY
 	};
 }
+
+export const getCoordinates = (element, list) => {
+	const rectangle = element.getBoundingClientRect();
+	return {
+		x: rectangle.left + list.scrollContainer.scrollLeft,
+		y: rectangle.top + list.scrollContainer.scrollTop
+	};
+};
