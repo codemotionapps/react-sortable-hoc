@@ -37,17 +37,17 @@ module.exports = class extends Component {
 	}
 
 	componentWillReceiveProps(nextProps){
-		if (this.props.index !== nextProps.index && this.node) {
+		if(this.props.index !== nextProps.index && this.node){
 			this.node.sortableInfo.index = nextProps.index;
 		}
-		if (this.props.disabled !== nextProps.disabled) {
+		if(this.props.disabled !== nextProps.disabled){
 			const {collection, disabled, index} = nextProps;
-			if (disabled) {
+			if(disabled){
 				this.removeDraggable(collection);
-			} else {
+			}else{
 				this.setDraggable(collection, index);
 			}
-		} else if (this.props.collection !== nextProps.collection) {
+		}else if(this.props.collection !== nextProps.collection){
 			this.removeDraggable(this.props.collection);
 			this.setDraggable(nextProps.collection, nextProps.index);
 		}
@@ -56,11 +56,11 @@ module.exports = class extends Component {
 	componentWillUnmount(){
 		const {collection, disabled} = this.props;
 
-		if (!disabled) this.removeDraggable(collection);
+		if(!disabled) this.removeDraggable(collection);
 	}
 
 	setDraggable(collection, index){
-		const node = (this.node = findDOMNode(this));
+		const node = this.node = findDOMNode(this);
 
 		node.sortableInfo = {
 			index,
@@ -79,7 +79,7 @@ module.exports = class extends Component {
 	getWrappedInstance(){
 		invariant(
 			this.props.config.withRef,
-			'To access the wrapped instance, you need to pass in {withRef: true} as the second argument of the SortableElement() call'
+			`To access the wrapped instance, you need to pass in {withRef: true} as the second argument of the SortableElement() call`
 		);
 		return this.refs.wrappedInstance;
 	}
@@ -87,7 +87,7 @@ module.exports = class extends Component {
 	render(){
 		const { component: Component, config } = this.props;
 
-		const ref = config.withRef ? 'wrappedInstance' : null;
+		const ref = config.withRef ? `wrappedInstance` : null;
 
 		return <Component ref={ref} {...omit(this.props, propKeys)} />;
 	}

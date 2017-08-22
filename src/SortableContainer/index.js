@@ -20,7 +20,7 @@ const {
 } = require(`../utils`);
 
 const propTypes = {
-	axis: PropTypes.oneOf(['x', 'y']),
+	axis: PropTypes.oneOf([`x`, `y`]),
 	config: PropTypes.object,
 	component: PropTypes.func.isRequired,
 	dragLayer: PropTypes.object,
@@ -35,11 +35,10 @@ const propTypes = {
 	lockOffset: PropTypes.oneOfType([
 		PropTypes.number,
 		PropTypes.string,
-		PropTypes.arrayOf(
-			PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-		)
+		PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.number, PropTypes.string]))
 	]),
 	getContainer: PropTypes.func,
+	transitionPrefix: PropTypes.string,
 	getHelperDimensions: PropTypes.func
 };
 
@@ -48,10 +47,10 @@ const acceleration = 10;
 const propKeys = Object.keys(propTypes);
 
 module.exports = class extends Component {
-	constructor(props) {
+	constructor(props){
 		super(props);
 		this.dragLayer = props.dragLayer || new DragLayer();
-		this.dragLayer.addRef(this);
+		this.indexInLayer = this.dragLayer.addRef(this);
 		this.dragLayer.onDragEnd = props.onDragEnd;
 		this.manager = new Manager();
 		this.host = false;
@@ -65,29 +64,29 @@ module.exports = class extends Component {
 	}
 
 	static defaultProps = { // eslint-disable-line no-undef
-		axis: 'y',
+		axis: `y`,
 		config: {
 			withRef: false
 		},
 		pressDelay: 0,
 		pressThreshold: 5,
 		useWindowAsScrollContainer: false,
-		contentWindow: typeof window !== 'undefined' ? window : null,
+		contentWindow: typeof window !== `undefined` ? window : null,
 		shouldCancelStart(e){
 			// Cancel sorting if the event target is an `input`, `textarea`, `select` or `option`
 			const disabledElements = [
-				'input',
-				'textarea',
-				'select',
-				'option',
-				'button'
+				`input`,
+				`textarea`,
+				`select`,
+				`option`,
+				`button`
 			];
 
-			if (disabledElements.indexOf(e.target.tagName.toLowerCase()) !== -1) {
+			if(disabledElements.indexOf(e.target.tagName.toLowerCase()) !== -1){
 				return true; // Return true to cancel sorting
 			}
 		},
-		lockOffset: '50%',
+		lockOffset: `50%`,
 		getHelperDimensions: ({node}) => ({
 			width: node.offsetWidth,
 			height: node.offsetHeight
@@ -107,7 +106,7 @@ module.exports = class extends Component {
 	}
 
 	setInitialScroll(axis){
-		this.initialScroll = this.scrollContainer[attribute("scroll", axis)];
+		this.initialScroll = this.scrollContainer[attribute(`scroll`, axis)];
 	}
 
 	componentDidMount(){
@@ -118,8 +117,8 @@ module.exports = class extends Component {
 			axis
 		} = this.props;
 
-		this.container = do{
-			if(typeof getContainer === 'function'){
+		this.dragLayer.listContainers[this.indexInLayer] = this.container = do{
+			if(typeof getContainer === `function`){
 				getContainer(this.getWrappedInstance());
 			}else{
 				findDOMNode(this);
@@ -138,7 +137,7 @@ module.exports = class extends Component {
 
 		this.setInitialScroll(axis);
 		this.contentWindow = do{
-			if(typeof contentWindow === 'function'){
+			if(typeof contentWindow === `function`){
 				contentWindow();
 			}else{
 				contentWindow;
@@ -199,7 +198,7 @@ module.exports = class extends Component {
 			this.manager.active = {index, collection, item: items[index]};
 
 			// Fixes a bug in Firefox where the :active state of anchor tags prevent subsequent 'mousemove' events from being fired (see https://github.com/clauderic/react-sortable-hoc/issues/118)
-			if(e.target.tagName.toLowerCase() === 'a') e.preventDefault();
+			if(e.target.tagName.toLowerCase() === `a`) e.preventDefault();
 
 			this.pressTimer = setTimeout(() => this.handlePress(e), this.props.pressDelay);
 		}
@@ -221,7 +220,7 @@ module.exports = class extends Component {
 		};
 		const delta = Math.abs(this._delta.x) + Math.abs(this._delta.y);
 
-		if(!pressThreshold || pressThreshold && delta >= pressThreshold){
+		if(!pressThreshold || (pressThreshold && delta >= pressThreshold)){
 			clearTimeout(this.cancelTimer);
 			this.cancelTimer = setTimeout(this.cancel, 0);
 		}
@@ -271,17 +270,16 @@ module.exports = class extends Component {
 			};
 
 			this.sortableGhost = node;
-			node.style.visibility = 'hidden';
-			node.style.transition = 'none';
+			node.style.visibility = `hidden`;
+			// node.style.transition = `none`;
 			node.style.opacity = 0;
 
 			if(helperClass){
-				this.dragLayer.helper.classList.add(...helperClass.split(' '));
+				this.dragLayer.helper.classList.add(...helperClass.split(` `));
 			}
 
 			this.setState({
-				sorting: true,
-				sortingIndex: index
+				sorting: true
 			});
 
 			if(onSortStart) onSortStart({node, index, collection}, e);
@@ -290,26 +288,26 @@ module.exports = class extends Component {
 
 	handleSortMove(e){
 		// animate nodes if required
-		if(this.checkActive(e)){
+		if(!this.dragLayer.animating && this.checkActive(e)){
 			this.animateNodes();
 			this.autoscroll();
 		}
 	}
 
-	handleSortEnd(e, newList = null){
+	handleSortEnd(e, newList){
 		this.host = false;
 
 		const { onSortEnd } = this.props;
 		if(!this.manager.active){
-			console.warn('there is no active node', e);
+			console.warn(`there is no active node`, e);
 			return;
 		}
 		const { collection } = this.manager.active;
 
 		if(this.sortableGhost){
-			this.sortableGhost.style.visibility = '';
-			this.sortableGhost.style.opacity = '';
-			this.sortableGhost.style.transition = '';
+			this.sortableGhost.style.visibility = ``;
+			this.sortableGhost.style.opacity = ``;
+			// this.sortableGhost.style.transition = ``;
 		}
 
 		const nodes = this.manager.refs[collection];
@@ -320,8 +318,8 @@ module.exports = class extends Component {
 			// Clear the cached offsetTop / offsetLeft value
 			node.edgeOffset = null;
 
-			// Remove the transforms / transitions
-			el.style.transform = '';
+			// Remove the transforms
+			el.style.transform = ``;
 		}
 
 		// Stop autoscroll
@@ -331,11 +329,10 @@ module.exports = class extends Component {
 		this.manager.active = null;
 
 		this.setState({
-			sorting: false,
-			sortingIndex: null
+			sorting: false
 		});
 
-		if(typeof onSortEnd === 'function'){
+		if(typeof onSortEnd === `function`){
 			// get the index in the new list
 			if(newList){
 				this.newIndex = newList.getClosestNode(e).index;
@@ -354,7 +351,7 @@ module.exports = class extends Component {
 
 	handleSortSwap(index, item){
 		const { onSortSwap } = this.props;
-		if(typeof onSortSwap === 'function'){
+		if(typeof onSortSwap === `function`){
 			onSortSwap({
 				index,
 				item
@@ -364,14 +361,14 @@ module.exports = class extends Component {
 
 	getEdgeOffset(node, offset = {top: 0, left: 0}){
 		// Get the actual offsetTop / offsetLeft value, no matter how deep the node is nested
-		if (node) {
+		if(node){
 			const nodeOffset = {
 				top: offset.top + node.offsetTop,
 				left: offset.left + node.offsetLeft
 			};
-			if (node.parentNode !== this.container) {
+			if(node.parentNode !== this.container){
 				return this.getEdgeOffset(node.parentNode, nodeOffset);
-			} else {
+			}else{
 				return nodeOffset;
 			}
 		}
@@ -391,7 +388,7 @@ module.exports = class extends Component {
 			lockOffset = [lockOffset, lockOffset];
 		}
 
-		invariant(lockOffset.length === 2, 'lockOffset prop of SortableContainer should be a single value or an array of exactly two values. Given %s', lockOffset);
+		invariant(lockOffset.length === 2, `lockOffset prop of SortableContainer should be a single value or an array of exactly two values. Given %s`, lockOffset);
 
 		const [ minLockOffset, maxLockOffset ] = lockOffset;
 
@@ -404,15 +401,15 @@ module.exports = class extends Component {
 	getLockPixelOffset(lockOffset){
 		let offsetX = lockOffset;
 		let offsetY = lockOffset;
-		let unit = 'px';
+		let unit = `px`;
 
-		if(typeof lockOffset === 'string'){
+		if(typeof lockOffset === `string`){
 			const match = /^[+-]?\d*(?:\.\d*)?(px|%)$/.exec(lockOffset);
 
 			invariant(
 				match !== null,
-				'lockOffset value should be a number or a string of a ' +
-					'number followed by "px" or "%". Given %s',
+				`lockOffset value should be a number or a string of a ` +
+					`number followed by "px" or "%". Given %s`,
 				lockOffset,
 			);
 
@@ -420,9 +417,9 @@ module.exports = class extends Component {
 			unit = match[1];
 		}
 
-		invariant(isFinite(offsetX) && isFinite(offsetY), 'lockOffset value should be a finite. Given %s', lockOffset);
+		invariant(isFinite(offsetX) && isFinite(offsetY), `lockOffset value should be a finite. Given %s`, lockOffset);
 
-		if(unit === '%'){
+		if(unit === `%`){
 			offsetX = offsetX * this.dragLayer.width / 100;
 			offsetY = offsetY * this.dragLayer.height / 100;
 		}
@@ -440,7 +437,7 @@ module.exports = class extends Component {
 		//TODO: keys is converting number to string!!! check origin value type as number???
 		Object.keys(this.manager.refs).forEach(collection => {
 			const nodes = this.manager.refs[collection].map(n => n.node);
-			if (nodes && nodes.length > 0) {
+			if(nodes && nodes.length > 0){
 				closestNodes.push(nodes[closestRect(p.x, p.y, nodes)]);
 				closestCollections.push(collection);
 			}
@@ -500,7 +497,7 @@ module.exports = class extends Component {
 			const nodes = this.dragBoundaries[`${name}Nodes`];
 
 			const returningNode = nodes.pop();
-			returningNode.style.transform = "";
+			returningNode.style.transform = ``;
 
 			let halfs = sizes.pop() + sizes.last();
 			if(!substract) halfs = -halfs;
@@ -591,21 +588,21 @@ module.exports = class extends Component {
 
 			const above = {
 				node: prevNode,
-				bound: "prev",
+				bound: `prev`,
 				next: -1
 			};
 			const below = {
 				node: nextNode,
-				bound: "next",
+				bound: `next`,
 				next: 1
 			};
 
 			if(!shouldPop){ // Add nodes
-				this.calculateBoundary(above, "above", axis, marginOffset, isMovingUp, oldDragBoundaries);
-				this.calculateBoundary(below, "below", axis, marginOffset, !isMovingUp, oldDragBoundaries);
+				this.calculateBoundary(above, `above`, axis, marginOffset, isMovingUp, oldDragBoundaries);
+				this.calculateBoundary(below, `below`, axis, marginOffset, !isMovingUp, oldDragBoundaries);
 			}else{ // Remove nodes
-				this.calculateReturningBoundary(above, "above", isMovingUp, oldDragBoundaries);
-				this.calculateReturningBoundary(below, "below", !isMovingUp, oldDragBoundaries);
+				this.calculateReturningBoundary(above, `above`, isMovingUp, oldDragBoundaries);
+				this.calculateReturningBoundary(below, `below`, !isMovingUp, oldDragBoundaries);
 			}
 		}
 
@@ -615,7 +612,7 @@ module.exports = class extends Component {
 	animateNode(node){
 		const axis = this.props.axis.toUpperCase();
 		const size = do{
-			if(axis === "X") this.dragLayer.width + this.dragLayer.marginOffset.x;
+			if(axis === `X`) this.dragLayer.width + this.dragLayer.marginOffset.x;
 			else this.dragLayer.height + this.dragLayer.marginOffset.y;
 		};
 		const translate = `translate${axis}`;
@@ -630,7 +627,7 @@ module.exports = class extends Component {
 
 	animateNodes(){
 		const { axis } = this.props;
-		const deltaScroll = this.scrollContainer[attribute("scroll", axis)] - this.initialScroll;
+		const deltaScroll = this.scrollContainer[attribute(`scroll`, axis)] - this.initialScroll;
 
 		const {
 			prev,
@@ -641,7 +638,7 @@ module.exports = class extends Component {
 
 		if(this.host) translate += deltaScroll;
 
-		if(typeof this.newIndex === "undefined"){
+		if(typeof this.newIndex === `undefined`){
 			this.newIndex = this.index;
 		}
 
@@ -665,28 +662,31 @@ module.exports = class extends Component {
 		let direction = 0;
 		let speed = 1;
 		let scroll = false;
+		const scrollDirection = attribute(`scroll`, axis);
 
 		if(!this.host){
-			const deltaScroll = this.scrollContainer[attribute("scroll", axis)] - this.initialScroll;
+			const deltaScroll = this.scrollContainer[scrollDirection] - this.initialScroll;
 			translate -= deltaScroll;
 		}
 
-		const size = axis === "x" ? "width" : "height";
-		if(translate >= this.dragLayer.maxTranslate[axis] - this.dragLayer[size] / 2){
+		const size = attribute(`size`, axis);
+		const dragLayerHalfSize = this.dragLayer[size] / 2;
+		// console.log(translate, `>=`, this.dragLayer.maxTranslate[axis] - dragLayerHalfSize, translate >= this.dragLayer.maxTranslate[axis] - dragLayerHalfSize);
+		// console.log(translate, `<=`, this.dragLayer.minTranslate[axis] + dragLayerHalfSize, translate <= this.dragLayer.minTranslate[axis] + dragLayerHalfSize);
+
+		if(translate >= this.dragLayer.maxTranslate[axis] - dragLayerHalfSize){
 			direction = 1; // Scroll Down/Right
 			scroll = true;
-			speed = acceleration * Math.abs((this.dragLayer.maxTranslate[axis] - this.dragLayer[size] / 2 - translate) / this.dragLayer[size]);
-		}else if(translate <= this.dragLayer.minTranslate[axis] + this.dragLayer[size] / 2){
+			speed = acceleration * Math.abs((this.dragLayer.maxTranslate[axis] - dragLayerHalfSize - translate) / this.dragLayer[size]);
+		}else if(translate <= this.dragLayer.minTranslate[axis] + dragLayerHalfSize){
 			direction = -1; // Scroll Up/Left
 			scroll = true;
-			speed = acceleration * Math.abs((translate - this.dragLayer[size] / 2 - this.dragLayer.minTranslate[axis]) / this.dragLayer[size]);
+			speed = acceleration * Math.abs((translate - dragLayerHalfSize - this.dragLayer.minTranslate[axis]) / this.dragLayer[size]);
 		}
 
 		clearInterval(this.autoscrollInterval);
 
 		if(!scroll) return;
-
-		const scrollDirection = axis === "x" ? "scrollLeft" : "scrollTop";
 		const offset = direction * speed;
 
 		this.autoscrollInterval = setInterval(() => {
@@ -706,7 +706,7 @@ module.exports = class extends Component {
 	getWrappedInstance(){
 		invariant(
 			this.props.config.withRef,
-			'To access the wrapped instance, you need to pass in {withRef: true} as the second argument of the SortableContainer() call',
+			`To access the wrapped instance, you need to pass in {withRef: true} as the second argument of the SortableContainer() call`,
 		);
 		return this.refs.wrappedInstance;
 	}
@@ -714,8 +714,10 @@ module.exports = class extends Component {
 	render(){
 		const { component: Component, config } = this.props;
 
-		const ref = config.withRef ? 'wrappedInstance' : null;
+		const { transitionPrefix, transitionDuration } = this.dragLayer;
 
-		return <Component ref={ref} {...omit(this.props, propKeys)} />;
+		const ref = config.withRef ? `wrappedInstance` : null;
+
+		return <Component ref={ref} transitionName={transitionPrefix} transitionDuration={transitionDuration} {...omit(this.props, propKeys)} />;
 	}
 };
