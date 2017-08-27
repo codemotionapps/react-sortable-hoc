@@ -2,14 +2,11 @@ const {
 	events,
 	getOffset,
 	getCSSPixelValue,
-	getElementMargin
-} = require(`../utils`);
-
-const {
+	getElementMargin,
 	closestRect,
 	padding,
 	getCoordinates
-} = require(`./utils`);
+} = require(`../utils`);
 
 module.exports = class {
 	constructor(className, transitionDuration){
