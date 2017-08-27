@@ -1,29 +1,34 @@
 const {
 	events,
 	getOffset,
+	getCSSPixelValue,
 	getElementMargin
 } = require(`../utils`);
 
 const {
 	closestRect,
-	updateDistanceBetweenContainers,
 	padding,
 	getCoordinates
 } = require(`./utils`);
 
 module.exports = class {
-	constructor(transitionPrefix, transitionDuration){
+	constructor(className, transitionDuration){
 		this.helper = null;
 		this.lists = [];
 		this.listContainers = [];
 
-		if(transitionPrefix){
-			this.transitionPrefix = transitionPrefix;
+		if(className){
+			this.transitionPrefix = className;
 			this.transitionDuration = transitionDuration;
+
+			this.stopAnimation = document.createElement(`style`);
+			this.stopAnimation.type = `text/css`;
+			this.stopAnimation.innerText = `.${className}{transition:none;}`;
+
 			this.styleElement = document.createElement(`style`);
 			this.styleElement.type = `text/css`;
 			this.styleElement.build = function(height){
-				this.innerText = `.${transitionPrefix}-leave, .${transitionPrefix}-enter.${transitionPrefix}-enter-active{height:${height}px;}`;
+				this.innerText = `.${className}-leave, .${className}-enter.${className}-enter-active{height:${height}px;}`;
 			};
 		}
 
@@ -46,43 +51,35 @@ module.exports = class {
 		}
 	}
 
-	setTranslateBoundaries(containerBoundingRect, list){
+	setTranslateBoundaries(containerBoundingRect, list, rect){
 		const { useWindowAsScrollContainer } = list.props;
 
 		this.minTranslate = {};
 		this.maxTranslate = {};
 
 		if(this.axis === `x`){
-			let containerLeft;
-			let containerWidth;
-
-			if(useWindowAsScrollContainer){
-				containerLeft = 0;
-				containerWidth = list.contentWindow.innerWidth;
-			}else{
-				containerLeft = containerBoundingRect.left;
-				containerWidth = containerLeft + containerBoundingRect.width;
-			}
-
-			const halfWidth = this.width / 2;
-			this.minTranslate.x = containerLeft - this.boundingClientRect.left - halfWidth;
-			this.maxTranslate.x = containerWidth - this.boundingClientRect.left - halfWidth;
+			var innerSize = `innerWidth`;
+			var rectAttr = `left`;
+			var sizeAttr = `width`;
 		}else{
-			let containerTop;
-			let containerHeight;
-
-			if(useWindowAsScrollContainer){
-				containerTop = 0;
-				containerHeight = list.contentWindow.innerHeight;
-			}else{
-				containerTop = containerBoundingRect.top;
-				containerHeight = containerTop + containerBoundingRect.height;
-			}
-
-			const halfHeight = this.height / 2;
-			this.minTranslate.y = containerTop - this.boundingClientRect.top - halfHeight;
-			this.maxTranslate.y = containerHeight - this.boundingClientRect.top - halfHeight;
+			var innerSize = `innerHeight`;
+			var rectAttr = `top`;
+			var sizeAttr = `height`;
 		}
+
+		let containerTop;
+		let containerSize;
+
+		if(useWindowAsScrollContainer){
+			containerTop = 0;
+			containerSize = list.contentWindow[innerSize];
+		}else{
+			containerTop = containerBoundingRect[rectAttr];
+			containerSize = containerTop + containerBoundingRect[sizeAttr];
+		}
+
+		this.minTranslate = containerTop - rect[rectAttr];
+		this.maxTranslate = containerSize - rect[rectAttr] - rect[sizeAttr];
 	}
 
 	startDrag(parent, list, e){
@@ -95,11 +92,11 @@ module.exports = class {
 			axis,
 			getHelperDimensions
 		} = list.props;
-		const { node, collection } = activeNode;
+		const { node } = activeNode;
 		const { index } = node.sortableInfo;
 		const margin = getElementMargin(node);
 		const containerBoundingRect = list.container.getBoundingClientRect();
-		const dimensions = getHelperDimensions({index, node, collection});
+		const dimensions = getHelperDimensions({index, node});
 
 		this.width = dimensions.width;
 		this.height = dimensions.height;
@@ -114,10 +111,6 @@ module.exports = class {
 		this.axis = axis;
 		this.offsetEdge = list.getEdgeOffset(node);
 		this.listInitialOffset = this.initialOffset = offset;
-		this.distanceBetweenContainers = {
-			x: 0,
-			y: 0
-		};
 
 		const fields = node.querySelectorAll(`input, textarea, select`);
 		const clonedNode = node.cloneNode(true);
@@ -146,15 +139,17 @@ module.exports = class {
 
 		list.calculateDragBoundaries(index);
 
-		this.setTranslateBoundaries(containerBoundingRect, list);
+		this.setTranslateBoundaries(containerBoundingRect, list, this.boundingClientRect);
 
 		this.listenerNode = e.touches ? node : list.contentWindow;
 		events.move.forEach(event => this.listenerNode.addEventListener(event, this.events.handleSortMove, false));
 		events.end.forEach(event => this.listenerNode.addEventListener(event, this.events.handleSortEnd, false));
 
-		document.head.appendChild(this.styleElement);
-		const style = getComputedStyle(this.helper);
-		this.styleElement.build(style.height - padding(style, axis));
+		if(this.styleElement){
+			document.head.appendChild(this.styleElement);
+			const style = getComputedStyle(this.helper);
+			this.styleElement.build(getCSSPixelValue(style.height) - padding(style, axis));
+		}
 
 		return activeNode;
 	}
@@ -173,6 +168,11 @@ module.exports = class {
 	}
 
 	handleSortEnd(e){
+		if(this.stopAnimation){
+			document.head.appendChild(this.stopAnimation);
+			setTimeout(() => document.head.removeChild(this.stopAnimation));
+		}
+
 		if(this.listenerNode){
 			events.move.forEach(event => this.listenerNode.removeEventListener(event, this.events.handleSortMove));
 			events.end.forEach(event => this.listenerNode.removeEventListener(event, this.events.handleSortEnd));
@@ -209,16 +209,14 @@ module.exports = class {
 
 		this.helper.style[`transform`] = `translate3d(${position.x}px,${position.y}px,0px)`;
 
-		let translate;
 		if(this.listInitialOffset === this.initialOffset){
-			translate = position;
+			var translate = position;
 		}else{
-			const helperOffset = getCoordinates(this.helper, this.currentList);
+			const { axis } = this;
+			const helperOffset = getCoordinates(this.helper, this.currentList, axis);
 
-			translate = { // TODO: Generate only axis
-				x: helperOffset.x - this.listInitialOffset.x - scrollOffset.x,
-				y: helperOffset.y - this.listInitialOffset.y - scrollOffset.y
-			};
+			var translate = {};
+			translate[axis] = helperOffset - this.listInitialOffset - scrollOffset[axis];
 		}
 
 		this.translate = translate;
@@ -229,43 +227,34 @@ module.exports = class {
 		if(this.animating) return;
 
 		const { pageX, pageY } = this.delta;
-		const closest = this.lists[closestRect(pageX, pageY, this.listContainers)];
+		const closestList = this.lists[closestRect(pageX, pageY, this.listContainers)];
+
+		if(closestList === this.currentList) return;
+
 		const { item } = this.currentList.manager.active;
 		this.active = item;
 
-		if(closest === this.currentList) return;
+		const { index } = closestList.getClosestNode();
+		closestList.manager.active = {
+			index,
+			item
+		};
 
-		this.distanceBetweenContainers = updateDistanceBetweenContainers(
-			this.distanceBetweenContainers,
-			closest,
-			this.currentList,
-			{
-				width: this.width,
-				height: this.height
-			},
-		);
-		this.currentList.handleSortEnd(e, closest);
-		const list = closest;
+		this.currentList.handleSortEnd(e, closestList, index);
+
+		closestList.handlePress();
+		closestList.calculateDragBoundaries(closestList.index);
+
+		this.currentList = closestList;
+
 		this.animating = true;
 
 		setTimeout(() => {
-			list.manager.active = {
-				...list.getClosestNode(e),
-				item
-			};
-			this.currentList = list;
 			this.animating = false;
-			this.setTranslateBoundaries(closest.container.getBoundingClientRect(), closest);
-			list.calculateDragBoundaries(list.index);
-			list.handlePress(e);
-			const { offsetLeft, offsetTop } = list.sortableGhost;
 
-			this.listInitialOffset = {
-				x: offsetLeft,
-				y: offsetTop
-			};
-
-			// this.updatePosition();
+			const rect = closestList.sortableGhost.getBoundingClientRect();
+			this.listInitialOffset = getCoordinates(rect, closestList, this.axis);
+			this.setTranslateBoundaries(closestList.container.getBoundingClientRect(), closestList, rect);
 		}, this.transitionDuration);
 	}
 };

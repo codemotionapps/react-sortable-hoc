@@ -6,7 +6,7 @@ const { Component } = React;
 const { findDOMNode } = require(`react-dom`);
 
 const DragLayer = require(`../DragLayer`);
-const { closestRect } = require(`../DragLayer/utils`);
+const { closestNode, getCoordinate, getHelperBoundaries } = require(`../DragLayer/utils`);
 
 const Manager = require(`../Manager`);
 const {
@@ -15,7 +15,7 @@ const {
 	getOffset,
 	dragComponentSize,
 	cleanTranform,
-	attribute,
+	attributes,
 	omit
 } = require(`../utils`);
 
@@ -106,7 +106,7 @@ module.exports = class extends Component {
 	}
 
 	setInitialScroll(axis){
-		this.initialScroll = this.scrollContainer[attribute(`scroll`, axis)];
+		this.initialScroll = this.scrollContainer[attributes.scroll[axis]];
 	}
 
 	componentDidMount(){
@@ -193,9 +193,9 @@ module.exports = class extends Component {
 		const node = closest(e.target, el => Boolean(el.sortableInfo));
 
 		if(node && node.sortableInfo && this.nodeIsChild(node) && !this.state.sorting){
-			const { index, collection } = node.sortableInfo;
+			const { index } = node.sortableInfo;
 
-			this.manager.active = {index, collection, item: items[index]};
+			this.manager.active = {index, item: items[index]};
 
 			// Fixes a bug in Firefox where the :active state of anchor tags prevent subsequent 'mousemove' events from being fired (see https://github.com/clauderic/react-sortable-hoc/issues/118)
 			if(e.target.tagName.toLowerCase() === `a`) e.preventDefault();
@@ -240,6 +240,7 @@ module.exports = class extends Component {
 	}
 
 	handlePress(e){
+		this.isScrollable = this.container.isScrollable();
 		let activeNode = null;
 		if(this.dragLayer.helper){
 			if(this.manager.active){
@@ -256,7 +257,7 @@ module.exports = class extends Component {
 				onSortStart,
 				axis
 			} = this.props;
-			const { node, collection } = activeNode;
+			const { node } = activeNode;
 			const { index } = node.sortableInfo;
 
 			this.index = index;
@@ -274,27 +275,24 @@ module.exports = class extends Component {
 			// node.style.transition = `none`;
 			node.style.opacity = 0;
 
-			if(helperClass){
-				this.dragLayer.helper.classList.add(...helperClass.split(` `));
-			}
+			if(helperClass) this.dragLayer.helper.classList.add(helperClass);
 
 			this.setState({
 				sorting: true
 			});
 
-			if(onSortStart) onSortStart({node, index, collection}, e);
+			if(onSortStart) onSortStart({node, index});
 		}
 	}
 
 	handleSortMove(e){
-		// animate nodes if required
 		if(!this.dragLayer.animating && this.checkActive(e)){
 			this.animateNodes();
-			this.autoscroll();
+			if(this.isScrollable) this.autoscroll();
 		}
 	}
 
-	handleSortEnd(e, newList){
+	handleSortEnd(e, newList, newIndex){
 		this.host = false;
 
 		const { onSortEnd } = this.props;
@@ -302,7 +300,6 @@ module.exports = class extends Component {
 			console.warn(`there is no active node`, e);
 			return;
 		}
-		const { collection } = this.manager.active;
 
 		if(this.sortableGhost){
 			this.sortableGhost.style.visibility = ``;
@@ -310,8 +307,8 @@ module.exports = class extends Component {
 			// this.sortableGhost.style.transition = ``;
 		}
 
-		const nodes = this.manager.refs[collection];
-		for(let i = 0, len = nodes.length; i < len; i++){
+		const nodes = this.manager.refs;
+		for(let i = 0, len = nodes ? nodes.length : 0; i < len; i++){
 			const node = nodes[i];
 			const el = node.node;
 
@@ -335,14 +332,13 @@ module.exports = class extends Component {
 		if(typeof onSortEnd === `function`){
 			// get the index in the new list
 			if(newList){
-				this.newIndex = newList.getClosestNode(e).index;
+				this.newIndex = newIndex;
 			}
 
 			onSortEnd({
 				oldIndex: this.index,
 				newIndex: this.newIndex,
-				newList,
-				collection
+				newList
 			}, e);
 		}
 
@@ -430,62 +426,44 @@ module.exports = class extends Component {
 		};
 	}
 
-	getClosestNode(e){
-		const p = getOffset(e);
-		const closestNodes = [];
-		const closestCollections = [];
-		//TODO: keys is converting number to string!!! check origin value type as number???
-		Object.keys(this.manager.refs).forEach(collection => {
-			const nodes = this.manager.refs[collection].map(n => n.node);
-			if(nodes && nodes.length > 0){
-				closestNodes.push(nodes[closestRect(p.x, p.y, nodes)]);
-				closestCollections.push(collection);
-			}
-		});
-		const index = closestRect(p.x, p.y, closestNodes);
-		const collection = closestCollections[index];
-		if(collection === undefined){
-			return {
-				collection,
-				index: 0
-			};
-		}
-		const finalNodes = this.manager.refs[collection].map(n => n.node);
-		const finalIndex = finalNodes.indexOf(closestNodes[index]);
-		const node = closestNodes[index];
-		//TODO: add better support for grid
-		const rect = node.getBoundingClientRect();
+	getClosestNode(){
+		const { helper } = this.dragLayer;
+		const { axis } = this.props;
+
+		const coordinates = getHelperBoundaries(helper, axis);
+
+		const nodes = this.manager.getOrderedRefs().map(n => n.node);
+
 		return {
-			collection,
-			index: finalIndex + (p.y > rect.bottom ? 1 : 0)
+			index: nodes && nodes.length > 0 ? closestNode(coordinates, nodes, axis) : 0
 		};
 	}
 
 	checkActive(e){
 		const active = this.manager.active;
-		if(!active){
-			// find closest collection
-			const node = closest(e.target, el => Boolean(el.sortableInfo));
-			if(node && node.sortableInfo){
-				const p = getOffset(e);
-				const {collection} = node.sortableInfo;
-				const nodes = this.manager.refs[collection].map(n => n.node);
-				// find closest index in collection
-				if(nodes){
-					const index = closestRect(p.x, p.y, nodes);
-					this.manager.active = {
-						index,
-						collection,
-						item: this.props.items[index]
-					};
-					this.handlePress(e);
-				}
-			}
+		if(active) return true;
 
-			return false;
+		const node = closest(e.target, el => Boolean(el.sortableInfo));
+		if(node && node.sortableInfo){
+			const nodes = this.manager.refs.map(n => n.node);
+
+			if(nodes){
+				const { helper } = this.dragLayer;
+				const { axis } = this.props;
+
+				const coordinates = getHelperBoundaries(helper, axis);
+				const index = closestNode(coordinates, nodes, axis);
+				this.manager.active = {
+					index,
+					item: this.props.items[index]
+				};
+				this.handlePress(e);
+
+				return true; // Not sure, seems logical
+			}
 		}
 
-		return true;
+		return false;
 	}
 
 	calculateReturningBoundary(boundary, name, substract, oldBoundaries){
@@ -610,6 +588,8 @@ module.exports = class extends Component {
 	}
 
 	animateNode(node){
+		if(!node) return;
+
 		const axis = this.props.axis.toUpperCase();
 		const size = do{
 			if(axis === `X`) this.dragLayer.width + this.dragLayer.marginOffset.x;
@@ -627,7 +607,7 @@ module.exports = class extends Component {
 
 	animateNodes(){
 		const { axis } = this.props;
-		const deltaScroll = this.scrollContainer[attribute(`scroll`, axis)] - this.initialScroll;
+		const deltaScroll = this.scrollContainer[attributes.scroll[axis]] - this.initialScroll;
 
 		const {
 			prev,
@@ -646,12 +626,14 @@ module.exports = class extends Component {
 		if(prev && translate < prev){
 			this.newIndex--;
 			const nodes = this.manager.getOrderedRefs(); // TODO: Remove for performance
-			this.animateNode(nodes[this.newIndex].node);
+			const ref = nodes[this.newIndex];
+			this.animateNode(ref ? ref.node : null);
 			this.calculateDragBoundaries(this.index, this.newIndex, nodes);
 		}else if(next && translate > next){
 			this.newIndex++;
 			const nodes = this.manager.getOrderedRefs(); // TODO: Remove for performance
-			this.animateNode(nodes[this.newIndex].node);
+			const ref = nodes[this.newIndex];
+			this.animateNode(ref ? ref.node : null);
 			this.calculateDragBoundaries(this.index, this.newIndex, nodes);
 		}
 	}
@@ -662,26 +644,22 @@ module.exports = class extends Component {
 		let direction = 0;
 		let speed = 1;
 		let scroll = false;
-		const scrollDirection = attribute(`scroll`, axis);
+		const scrollDirection = attributes.scroll[axis];
+		const size = attributes.size[axis];
 
 		if(!this.host){
 			const deltaScroll = this.scrollContainer[scrollDirection] - this.initialScroll;
 			translate -= deltaScroll;
 		}
 
-		const size = attribute(`size`, axis);
-		const dragLayerHalfSize = this.dragLayer[size] / 2;
-		// console.log(translate, `>=`, this.dragLayer.maxTranslate[axis] - dragLayerHalfSize, translate >= this.dragLayer.maxTranslate[axis] - dragLayerHalfSize);
-		// console.log(translate, `<=`, this.dragLayer.minTranslate[axis] + dragLayerHalfSize, translate <= this.dragLayer.minTranslate[axis] + dragLayerHalfSize);
-
-		if(translate >= this.dragLayer.maxTranslate[axis] - dragLayerHalfSize){
+		if(translate >= this.dragLayer.maxTranslate){
 			direction = 1; // Scroll Down/Right
 			scroll = true;
-			speed = acceleration * Math.abs((this.dragLayer.maxTranslate[axis] - dragLayerHalfSize - translate) / this.dragLayer[size]);
-		}else if(translate <= this.dragLayer.minTranslate[axis] + dragLayerHalfSize){
+			speed = acceleration * Math.abs((this.dragLayer.maxTranslate - translate) / this.dragLayer[size]);
+		}else if(translate <= this.dragLayer.minTranslate){
 			direction = -1; // Scroll Up/Left
 			scroll = true;
-			speed = acceleration * Math.abs((translate - dragLayerHalfSize - this.dragLayer.minTranslate[axis]) / this.dragLayer[size]);
+			speed = acceleration * Math.abs((translate - this.dragLayer.minTranslate) / this.dragLayer[size]);
 		}
 
 		clearInterval(this.autoscrollInterval);

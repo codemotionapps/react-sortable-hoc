@@ -10,7 +10,6 @@ const propTypes = {
 	index: PropTypes.number.isRequired,
 	config: PropTypes.object,
 	component: PropTypes.func.isRequired,
-	collection: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 	disabled: PropTypes.bool
 };
 
@@ -24,56 +23,39 @@ module.exports = class extends Component {
 	static propTypes = propTypes;
 
 	static defaultProps = { // eslint-disable-line no-undef
-		collection: 0,
 		config: {withRef: false}
 	};
 
 	componentDidMount(){
-		const { collection, disabled, index } = this.props;
+		const { index } = this.props;
 
-		if(!disabled){
-			this.setDraggable(collection, index);
-		}
+		this.setDraggable(index);
 	}
 
 	componentWillReceiveProps(nextProps){
 		if(this.props.index !== nextProps.index && this.node){
 			this.node.sortableInfo.index = nextProps.index;
 		}
-		if(this.props.disabled !== nextProps.disabled){
-			const {collection, disabled, index} = nextProps;
-			if(disabled){
-				this.removeDraggable(collection);
-			}else{
-				this.setDraggable(collection, index);
-			}
-		}else if(this.props.collection !== nextProps.collection){
-			this.removeDraggable(this.props.collection);
-			this.setDraggable(nextProps.collection, nextProps.index);
-		}
 	}
 
 	componentWillUnmount(){
-		const {collection, disabled} = this.props;
-
-		if(!disabled) this.removeDraggable(collection);
+		this.removeDraggable();
 	}
 
-	setDraggable(collection, index){
+	setDraggable(index){
 		const node = this.node = findDOMNode(this);
 
 		node.sortableInfo = {
 			index,
-			collection,
 			manager: this.context.manager
 		};
 
 		this.ref = {node};
-		this.context.manager.add(collection, this.ref);
+		this.context.manager.add(this.ref);
 	}
 
-	removeDraggable(collection){
-		this.context.manager.remove(collection, this.ref);
+	removeDraggable(){
+		this.context.manager.remove(this.ref);
 	}
 
 	getWrappedInstance(){

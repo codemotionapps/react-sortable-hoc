@@ -1,6 +1,8 @@
 /* eslint eol-last: ["error", "always"] */
 
-const { clamp } = require(`../utils`);
+const { clamp, getCSSPixelValue } = require(`../utils`);
+
+const ClientRect = document.body.getBoundingClientRect().constructor;
 
 function distanceRect(x, y, rect){
 	const dx = x - clamp(x, rect.left, rect.right);
@@ -10,51 +12,63 @@ function distanceRect(x, y, rect){
 }
 
 export function closestRect(x, y, containers){
-	const distances = containers.map(c =>
-		distanceRect(x, y, c.getBoundingClientRect()));
+	const distances = containers.map(c => distanceRect(x, y, c.getBoundingClientRect()));
 	return distances.indexOf(Math.min(...distances));
 }
 
-function getDelta(rect1, rect2){
-	return {
-		x: rect1.left - rect2.left,
-		y: rect1.top - rect2.top
-	};
-}
-
-export function updateDistanceBetweenContainers(distance, container1, container2){
-	const {x, y} = distance;
-	const d = getDelta(
-		...[container1, container2].map(c => c.container.getBoundingClientRect()),
-	);
-	const scrollDX = container2.scrollContainer.scrollLeft - container1.scrollContainer.scrollLeft;
-	const scrollDY = do{
-		if(container2.scrollContainer.scrollTop > container1.scrollContainer.scrollTop){
-			container2.scrollContainer.scrollTop - container1.scrollContainer.scrollTop;
+export function getCoordinate(element, axis){ // Margin not included
+	const rect = element.getBoundingClientRect();
+	return do {
+		if(axis === `x`){
+			rect.left + (rect.width / 2);
 		}else{
-			container1.scrollContainer.scrollTop - container2.scrollContainer.scrollTop;
+			rect.top + (rect.height / 2);
 		}
 	};
-	return {
-		x: x + d.x + scrollDX,
-		y: y + d.y + scrollDY
+}
+
+export function closestNode(coordinates, nodes, axis){
+	const [a, b] = coordinates;
+	const distances = nodes.map(c => (
+		c = getCoordinate(c, axis),
+		Math.min(a - c, b - c)
+	));
+
+	if(distances.length === 0) return 0;
+
+	return distances.indexOf(distances.reduce(
+		(prev, curr) => Math.abs(curr) < Math.abs(prev) ? curr : prev
+	));
+}
+
+export function getHelperBoundaries(node, axis){
+	const rect = node.getBoundingClientRect();
+	return do {
+		if(axis === `x`){
+			[rect.left, rect.left + rect.width];
+		}else{
+			[rect.top, rect.top + rect.height];
+		}
 	};
 }
 
-export const getCoordinates = (element, list) => {
-	const rectangle = element.getBoundingClientRect();
-	return {
-		x: rectangle.left + list.scrollContainer.scrollLeft,
-		y: rectangle.top + list.scrollContainer.scrollTop
+export function getCoordinates(element, list, axis){
+	if(element.constructor !== ClientRect) element = element.getBoundingClientRect();
+	return do {
+		if(axis === `x`){
+			element.left + list.scrollContainer.scrollLeft;
+		}else{
+			element.top + list.scrollContainer.scrollTop;
+		}
 	};
 };
 
 export function padding(style, axis){
 	return do {
 		if(axis === `x`){
-			style.paddingLeft + style.paddingRight;
+			getCSSPixelValue(style.paddingLeft) + getCSSPixelValue(style.paddingRight);
 		}else{
-			style.paddingTop + style.paddingBottom;
+			getCSSPixelValue(style.paddingTop) + getCSSPixelValue(style.paddingBottom);
 		}
 	};
 }
