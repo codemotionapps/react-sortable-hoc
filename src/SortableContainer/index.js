@@ -6,13 +6,14 @@ const { Component } = React;
 const { findDOMNode } = require(`react-dom`);
 
 const DragLayer = require(`../DragLayer`);
-const { closestNode, getCoordinate, getHelperBoundaries } = require(`../DragLayer/utils`);
 
 const Manager = require(`../Manager`);
 const {
 	closest,
 	events,
 	getOffset,
+	closestNode,
+	getHelperBoundaries,
 	dragComponentSize,
 	cleanTranform,
 	attributes,
@@ -434,8 +435,30 @@ module.exports = class extends Component {
 
 		const nodes = this.manager.getOrderedRefs().map(n => n.node);
 
+		if(nodes && nodes.length > 0){
+			let nodeIndex = closestNode(coordinates, nodes, axis);
+
+			if(axis === `x`){
+				var cAttr = `left`; // coordinate attribute
+				var sizeAttr = `width`;
+			}else{
+				var cAttr = `top`;
+				var sizeAttr = `height`;
+			}
+			const node = nodes[nodeIndex];
+			const rect = node.getBoundingClientRect();
+			const boundary = rect[cAttr] + (rect[sizeAttr] / 2);
+
+			if(nodes.length > nodeIndex && coordinates[1] > boundary) nodeIndex++;
+			if(nodeIndex > 0 && coordinates[0] < boundary) nodeIndex--;
+
+			return {
+				index: nodeIndex
+			};
+		}
+
 		return {
-			index: nodes && nodes.length > 0 ? closestNode(coordinates, nodes, axis) : 0
+			index: 0
 		};
 	}
 
@@ -639,6 +662,8 @@ module.exports = class extends Component {
 	}
 
 	autoscroll(){
+		if(this.dragLayer.animating) return;
+
 		const { axis } = this.props;
 		let translate = this.dragLayer.translate[axis];
 		let direction = 0;

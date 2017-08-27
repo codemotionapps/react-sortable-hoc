@@ -9,8 +9,7 @@ const { omit } = require(`../utils`);
 const propTypes = {
 	index: PropTypes.number.isRequired,
 	config: PropTypes.object,
-	component: PropTypes.func.isRequired,
-	disabled: PropTypes.bool
+	component: PropTypes.func.isRequired
 };
 
 const propKeys = Object.keys(propTypes);
