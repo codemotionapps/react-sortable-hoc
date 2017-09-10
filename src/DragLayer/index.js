@@ -4,7 +4,6 @@ const {
 	getCSSPixelValue,
 	getElementMargin,
 	closestRect,
-	padding,
 	getCoordinates
 } = require(`../utils`);
 
@@ -145,7 +144,7 @@ module.exports = class {
 		if(this.styleElement){
 			document.head.appendChild(this.styleElement);
 			const style = getComputedStyle(this.helper);
-			this.styleElement.build(getCSSPixelValue(style.height) - padding(style, axis));
+			this.styleElement.build(getCSSPixelValue(style.height));
 		}
 
 		return activeNode;
