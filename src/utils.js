@@ -177,13 +177,3 @@ export function getCoordinates(element, list, axis){
 		}
 	};
 };
-
-export function padding(style, axis){
-	return do {
-		if(axis === `x`){
-			getCSSPixelValue(style.paddingLeft) + getCSSPixelValue(style.paddingRight);
-		}else{
-			getCSSPixelValue(style.paddingTop) + getCSSPixelValue(style.paddingBottom);
-		}
-	};
-}
