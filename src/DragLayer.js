@@ -53,6 +53,7 @@ module.exports = class {
 		this.minTranslate = {};
 		this.maxTranslate = {};
 
+		/* eslint-disable no-var */
 		if(this.axis === `x`){
 			var innerSize = `innerWidth`;
 			var rectAttr = `left`;
@@ -62,6 +63,7 @@ module.exports = class {
 			var rectAttr = `top`;
 			var sizeAttr = `height`;
 		}
+		/* eslint-enable no-var */
 
 		let containerTop;
 		let containerSize;
@@ -205,6 +207,7 @@ module.exports = class {
 
 		this.helper.style[`transform`] = `translate3d(${position.x}px,${position.y}px,0px)`;
 
+		/* eslint-disable no-var */
 		if(this.listInitialOffset === this.initialOffset){
 			var translate = position;
 		}else{
@@ -214,6 +217,7 @@ module.exports = class {
 			var translate = {};
 			translate[axis] = helperOffset - this.listInitialOffset - scrollOffset[axis];
 		}
+		/* eslint-enable no-var */
 
 		this.translate = translate;
 		this.delta = offset;

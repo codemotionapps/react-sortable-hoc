@@ -15,13 +15,13 @@ const propTypes = {
 const propKeys = Object.keys(propTypes);
 
 module.exports = class extends Component {
-	static contextTypes = { // eslint-disable-line no-undef
+	static contextTypes = {
 		manager: PropTypes.object.isRequired
 	};
 
 	static propTypes = propTypes;
 
-	static defaultProps = { // eslint-disable-line no-undef
+	static defaultProps = {
 		config: {withRef: false}
 	};
 
