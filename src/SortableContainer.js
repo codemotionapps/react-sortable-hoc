@@ -64,7 +64,7 @@ module.exports = class extends Component {
 		this.state = {};
 	}
 
-	static defaultProps = { // eslint-disable-line no-undef
+	static defaultProps = {
 		axis: `y`,
 		config: {
 			withRef: false
@@ -96,7 +96,7 @@ module.exports = class extends Component {
 
 	static propTypes = propTypes;
 
-	static childContextTypes = { // eslint-disable-line no-undef
+	static childContextTypes = {
 		manager: PropTypes.object.isRequired
 	};
 
@@ -438,6 +438,7 @@ module.exports = class extends Component {
 		if(nodes && nodes.length > 0){
 			let nodeIndex = closestNode(coordinates, nodes, axis);
 
+			/* eslint-disable no-var */
 			if(axis === `x`){
 				var cAttr = `left`; // coordinate attribute
 				var sizeAttr = `width`;
@@ -445,6 +446,8 @@ module.exports = class extends Component {
 				var cAttr = `top`;
 				var sizeAttr = `height`;
 			}
+			/* eslint-enable no-var */
+
 			const node = nodes[nodeIndex];
 			const rect = node.getBoundingClientRect();
 			const boundary = rect[cAttr] + (rect[sizeAttr] / 2);

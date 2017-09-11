@@ -2,7 +2,7 @@ const find = require(`lodash.find`);
 const sortBy = require(`lodash.sortby`);
 
 module.exports = class {
-	refs = []; // eslint-disable-line no-undef
+	refs = [];
 
 	add(ref){
 		this.refs.push(ref);
