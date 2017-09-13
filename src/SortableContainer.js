@@ -5,9 +5,9 @@ const React = require(`react`);
 const { Component } = React;
 const { findDOMNode } = require(`react-dom`);
 
-const DragLayer = require(`../DragLayer`);
+const DragLayer = require(`./DragLayer`);
 
-const Manager = require(`../Manager`);
+const Manager = require(`./Manager`);
 const {
 	closest,
 	events,
@@ -16,9 +16,11 @@ const {
 	getHelperBoundaries,
 	dragComponentSize,
 	cleanTranform,
+	isScrollable,
+	arrayLast,
 	attributes,
 	omit
-} = require(`../utils`);
+} = require(`./utils`);
 
 const propTypes = {
 	axis: PropTypes.oneOf([`x`, `y`]),
@@ -241,7 +243,7 @@ module.exports = class extends Component {
 	}
 
 	handlePress(e){
-		this.isScrollable = this.container.isScrollable();
+		this.isScrollable = isScrollable(this.container);
 		let activeNode = null;
 		if(this.dragLayer.helper){
 			if(this.manager.active){
@@ -503,7 +505,7 @@ module.exports = class extends Component {
 			const returningNode = nodes.pop();
 			returningNode.style.transform = ``;
 
-			let halfs = sizes.pop() + sizes.last();
+			let halfs = sizes.pop() + arrayLast(sizes);
 			if(!substract) halfs = -halfs;
 
 			this.dragBoundaries[bound] = oldBoundaries[bound] - halfs;
@@ -517,7 +519,7 @@ module.exports = class extends Component {
 		if(node){
 			const sizes = this.dragBoundaries[`${name}Sizes`];
 			const nodes = this.dragBoundaries[`${name}Nodes`];
-			const lastSize = sizes.last();
+			const lastSize = arrayLast(sizes);
 
 			const size = dragComponentSize(node, axis, marginOffset, next);
 			sizes.push(size);
