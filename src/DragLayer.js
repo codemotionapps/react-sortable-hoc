@@ -5,7 +5,7 @@ const {
 	getElementMargin,
 	closestRect,
 	getCoordinates
-} = require(`../utils`);
+} = require(`./utils`);
 
 module.exports = class {
 	constructor(className, transitionDuration){

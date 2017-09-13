@@ -4,7 +4,7 @@ const React = require(`react`);
 const { Component } = React;
 const { findDOMNode } = require(`react-dom`);
 
-const { omit } = require(`../utils`);
+const { omit } = require(`./utils`);
 
 const propTypes = {
 	index: PropTypes.number.isRequired,

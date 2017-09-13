@@ -177,3 +177,11 @@ export function getCoordinates(element, list, axis){
 		}
 	};
 };
+
+export function isScrollable(element){
+	return element.offsetHeight !== element.scrollHeight;
+}
+
+export function arrayLast(array){
+	return array[array.length - 1];
+};
