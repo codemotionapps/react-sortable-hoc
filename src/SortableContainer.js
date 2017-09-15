@@ -33,7 +33,7 @@ const propTypes = {
 	onSortEnd: PropTypes.func,
 	onDragEnd: PropTypes.func,
 	shouldCancelStart: PropTypes.func,
-	pressDelay: PropTypes.number,
+	distance: PropTypes.number,
 	useWindowAsScrollContainer: PropTypes.bool,
 	lockOffset: PropTypes.oneOfType([
 		PropTypes.number,
@@ -62,8 +62,6 @@ module.exports = class extends Component {
 			move: this.handleMove.bind(this),
 			end: this.handleEnd.bind(this)
 		};
-
-		this.state = {};
 	}
 
 	static defaultProps = {
@@ -71,8 +69,8 @@ module.exports = class extends Component {
 		config: {
 			withRef: false
 		},
-		pressDelay: 0,
 		pressThreshold: 5,
+		distance: 0,
 		useWindowAsScrollContainer: false,
 		contentWindow: typeof window !== `undefined` ? window : null,
 		shouldCancelStart(e){
@@ -184,7 +182,7 @@ module.exports = class extends Component {
 
 	handleStart(e){
 		const p = getOffset(e);
-		const { shouldCancelStart, items } = this.props;
+		const { shouldCancelStart, items, distance } = this.props;
 
 		if(e.button === 2 || shouldCancelStart(e)){
 			return false;
@@ -195,7 +193,7 @@ module.exports = class extends Component {
 
 		const node = closest(e.target, el => Boolean(el.sortableInfo));
 
-		if(node && node.sortableInfo && this.nodeIsChild(node) && !this.state.sorting){
+		if(node && node.sortableInfo && this.nodeIsChild(node) && !this.sorting){
 			const { index } = node.sortableInfo;
 
 			this.manager.active = {index, item: items[index]};
@@ -203,7 +201,7 @@ module.exports = class extends Component {
 			// Fixes a bug in Firefox where the :active state of anchor tags prevent subsequent 'mousemove' events from being fired (see https://github.com/clauderic/react-sortable-hoc/issues/118)
 			if(e.target.tagName.toLowerCase() === `a`) e.preventDefault();
 
-			this.pressTimer = setTimeout(() => this.handlePress(e), this.props.pressDelay);
+			if(!distance) this.handlePress(e);
 		}
 	}
 
@@ -212,10 +210,10 @@ module.exports = class extends Component {
 	}
 
 	handleMove(e){
-		const { pressThreshold } = this.props;
+		const { distance, pressThreshold } = this.props;
 		const p = getOffset(e);
 
-		if(this.state.sorting || !this._touched) return;
+		if(this.sorting || !this._touched) return;
 
 		this._delta = {
 			x: this._pos.x - p.x,
@@ -223,20 +221,24 @@ module.exports = class extends Component {
 		};
 		const delta = Math.abs(this._delta.x) + Math.abs(this._delta.y);
 
-		if(!pressThreshold || (pressThreshold && delta >= pressThreshold)){
+		if(!distance && (!pressThreshold || (pressThreshold && delta >= pressThreshold))){
 			clearTimeout(this.cancelTimer);
 			this.cancelTimer = setTimeout(this.cancel, 0);
+		}else if(distance && delta >= distance && this.manager.isActive()){
+			this.handlePress(e);
 		}
 	}
 
 	handleEnd(){
+		const { distance } = this.props;
+
 		this._touched = false;
 
-		this.cancel();
+		if(!distance) this.cancel();
 	}
 
 	cancel(){
-		if(this.state && this.state.sorting) return;
+		if(this.sorting) return;
 
 		clearTimeout(this.pressTimer);
 		if(this.manager) this.manager.active = null;
@@ -280,9 +282,7 @@ module.exports = class extends Component {
 
 			if(helperClass) this.dragLayer.helper.classList.add(helperClass);
 
-			this.setState({
-				sorting: true
-			});
+			this.sorting = true;
 
 			if(onSortStart) onSortStart({node, index});
 		}
@@ -328,9 +328,7 @@ module.exports = class extends Component {
 		// Update state
 		this.manager.active = null;
 
-		this.setState({
-			sorting: false
-		});
+		this.sorting = false;
 
 		if(typeof onSortEnd === `function`){
 			// get the index in the new list
