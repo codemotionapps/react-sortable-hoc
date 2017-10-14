@@ -1,39 +1,37 @@
-const find = require(`lodash.find`);
-const sortBy = require(`lodash.sortby`);
+class Nodes {
+	map(mapper){
+		const mapped = [];
+
+		for(const i in this){
+			mapped.push(mapper(this[i]));
+		}
+
+		return mapped;
+	}
+}
 
 module.exports = class {
-	refs = [];
+	nodes = new Nodes();
 
-	add(ref){
-		this.refs.push(ref);
+	constructor(list){
+		this.list = list;
 	}
 
-	remove(ref){
-		const index = this.getIndex(ref);
-
-		if(index !== -1){
-			this.refs.splice(index, 1);
-		}
+	add(index: number, node: HTMLElement){
+		this.nodes[index] = node;
 	}
 
-	isActive(){
-		return this.active;
+	remove(index: number, node: HTMLElement){
+		this.nodes[index] === node && delete this.nodes[index];
+	}
+
+	get isActive(){
+		return Boolean(this.active);
 	}
 
 	getActive(){
 		if(!this.active) return null;
 
-		return find(
-			this.refs,
-			({node}) => node.sortableInfo.index === this.active.index
-		) || this.refs.slice(-1).pop();
-	}
-
-	getIndex(ref){
-		return this.refs.indexOf(ref);
-	}
-
-	getOrderedRefs(){
-		return sortBy(this.refs, ({node}) => node.sortableInfo.index);
+		return this.nodes[this.active.index];
 	}
 };
