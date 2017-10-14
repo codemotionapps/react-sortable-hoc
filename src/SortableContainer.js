@@ -15,7 +15,7 @@ const {
 	closestNode,
 	getHelperBoundaries,
 	dragComponentSize,
-	cleanTranform,
+	cleanTransform,
 	isScrollable,
 	arrayLast,
 	attributes,
@@ -24,8 +24,8 @@ const {
 
 const propTypes = {
 	axis: PropTypes.oneOf([`x`, `y`]),
-	config: PropTypes.object,
 	component: PropTypes.func.isRequired,
+	items: PropTypes.array.isRequired,
 	dragLayer: PropTypes.object,
 	helperClass: PropTypes.string,
 	contentWindow: PropTypes.any,
@@ -40,7 +40,6 @@ const propTypes = {
 		PropTypes.string,
 		PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.number, PropTypes.string]))
 	]),
-	getContainer: PropTypes.func,
 	transitionPrefix: PropTypes.string,
 	getHelperDimensions: PropTypes.func
 };
@@ -49,13 +48,41 @@ const acceleration = 10;
 
 const propKeys = Object.keys(propTypes);
 
+class Ghost {
+	constructor(node){
+		this.info = node.sortableInfo;
+
+		Ghost.addStyles(node);
+	}
+
+	removeStyles(){
+		const node = this.node;
+
+		node.style.visibility = ``;
+		node.style.opacity = ``;
+		// node.style.transition = ``;
+	}
+
+	get node(){
+		return this.info.manager.nodes[this.info.index] || {
+			style: {}
+		};
+	}
+
+	static addStyles(node){
+		node.style.visibility = `hidden`;
+		node.style.opacity = 0;
+		// node.style.transition = `none`;
+	}
+}
+
 module.exports = class extends Component {
 	constructor(props){
 		super(props);
 		this.dragLayer = props.dragLayer || new DragLayer();
 		this.indexInLayer = this.dragLayer.addRef(this);
 		this.dragLayer.onDragEnd = props.onDragEnd;
-		this.manager = new Manager();
+		this.manager = new Manager(this);
 		this.host = false;
 		this.events = {
 			start: this.handleStart.bind(this),
@@ -66,9 +93,6 @@ module.exports = class extends Component {
 
 	static defaultProps = {
 		axis: `y`,
-		config: {
-			withRef: false
-		},
 		pressThreshold: 5,
 		distance: 0,
 		useWindowAsScrollContainer: false,
@@ -113,18 +137,11 @@ module.exports = class extends Component {
 	componentDidMount(){
 		const {
 			contentWindow,
-			getContainer,
 			useWindowAsScrollContainer,
 			axis
 		} = this.props;
 
-		this.dragLayer.listContainers[this.indexInLayer] = this.container = do{
-			if(typeof getContainer === `function`){
-				getContainer(this.getWrappedInstance());
-			}else{
-				findDOMNode(this);
-			}
-		};
+		this.dragLayer.listContainers[this.indexInLayer] = this.container = findDOMNode(this);
 
 		this.document = this.container.ownerDocument || document;
 
@@ -224,7 +241,7 @@ module.exports = class extends Component {
 		if(!distance && (!pressThreshold || (pressThreshold && delta >= pressThreshold))){
 			clearTimeout(this.cancelTimer);
 			this.cancelTimer = setTimeout(this.cancel, 0);
-		}else if(distance && delta >= distance && this.manager.isActive()){
+		}else if(distance && delta >= distance && this.manager.isActive){
 			this.handlePress(e);
 		}
 	}
@@ -246,23 +263,22 @@ module.exports = class extends Component {
 
 	handlePress(e){
 		this.isScrollable = isScrollable(this.container);
-		let activeNode = null;
+		let node = null;
 		if(this.dragLayer.helper){
 			if(this.manager.active){
 				this.checkActiveIndex();
-				activeNode = this.manager.getActive();
+				node = this.manager.getActive();
 			}
 		}else{
-			activeNode = this.dragLayer.startDrag(this.document.body, this, e);
+			node = this.dragLayer.startDrag(this.document.body, this, e);
 		}
 
-		if(activeNode){
+		if(node){
 			const {
 				helperClass,
 				onSortStart,
 				axis
 			} = this.props;
-			const { node } = activeNode;
 			const { index } = node.sortableInfo;
 
 			this.index = index;
@@ -275,10 +291,7 @@ module.exports = class extends Component {
 				left: window.scrollX
 			};
 
-			this.sortableGhost = node;
-			node.style.visibility = `hidden`;
-			// node.style.transition = `none`;
-			node.style.opacity = 0;
+			this.sortableGhost = new Ghost(node);
 
 			if(helperClass) this.dragLayer.helper.classList.add(helperClass);
 
@@ -305,21 +318,15 @@ module.exports = class extends Component {
 		}
 
 		if(this.sortableGhost){
-			this.sortableGhost.style.visibility = ``;
-			this.sortableGhost.style.opacity = ``;
-			// this.sortableGhost.style.transition = ``;
+			this.sortableGhost.removeStyles();
 		}
 
-		const nodes = this.manager.refs;
-		for(let i = 0, len = nodes ? nodes.length : 0; i < len; i++){
+		const nodes = this.manager.nodes;
+		for(const i in nodes){
 			const node = nodes[i];
-			const el = node.node;
-
-			// Clear the cached offsetTop / offsetLeft value
-			node.edgeOffset = null;
 
 			// Remove the transforms
-			el.style.transform = ``;
+			node.style.transform = ``;
 		}
 
 		// Stop autoscroll
@@ -356,21 +363,6 @@ module.exports = class extends Component {
 		}
 	}
 
-	getEdgeOffset(node, offset = {top: 0, left: 0}){
-		// Get the actual offsetTop / offsetLeft value, no matter how deep the node is nested
-		if(node){
-			const nodeOffset = {
-				top: offset.top + node.offsetTop,
-				left: offset.left + node.offsetLeft
-			};
-			if(node.parentNode !== this.container){
-				return this.getEdgeOffset(node.parentNode, nodeOffset);
-			}else{
-				return nodeOffset;
-			}
-		}
-	}
-
 	getOffset(e){
 		return {
 			x: e.touches ? e.touches[0].pageX : e.pageX,
@@ -387,7 +379,7 @@ module.exports = class extends Component {
 
 		invariant(lockOffset.length === 2, `lockOffset prop of SortableContainer should be a single value or an array of exactly two values. Given %s`, lockOffset);
 
-		const [ minLockOffset, maxLockOffset ] = lockOffset;
+		const [minLockOffset, maxLockOffset] = lockOffset;
 
 		return [
 			this.getLockPixelOffset(minLockOffset),
@@ -433,20 +425,13 @@ module.exports = class extends Component {
 
 		const coordinates = getHelperBoundaries(helper, axis);
 
-		const nodes = this.manager.getOrderedRefs().map(n => n.node);
+		const nodes = this.manager.nodes.map(n => n);
 
 		if(nodes && nodes.length > 0){
 			let nodeIndex = closestNode(coordinates, nodes, axis);
 
-			/* eslint-disable no-var */
-			if(axis === `x`){
-				var cAttr = `left`; // coordinate attribute
-				var sizeAttr = `width`;
-			}else{
-				var cAttr = `top`;
-				var sizeAttr = `height`;
-			}
-			/* eslint-enable no-var */
+			const sizeAttr = attributes.size[axis];
+			const cAttr = attributes.coordinate[axis];
 
 			const node = nodes[nodeIndex];
 			const rect = node.getBoundingClientRect();
@@ -471,7 +456,7 @@ module.exports = class extends Component {
 
 		const node = closest(e.target, el => Boolean(el.sortableInfo));
 		if(node && node.sortableInfo){
-			const nodes = this.manager.refs.map(n => n.node);
+			const nodes = this.manager.nodes.map(n => n);
 
 			if(nodes){
 				const { helper } = this.dragLayer;
@@ -500,7 +485,7 @@ module.exports = class extends Component {
 			const sizes = this.dragBoundaries[`${name}Sizes`];
 			const nodes = this.dragBoundaries[`${name}Nodes`];
 
-			const returningNode = nodes.pop();
+			const returningNode = this.manager.nodes[nodes.pop().index];
 			returningNode.style.transform = ``;
 
 			let halfs = sizes.pop() + arrayLast(sizes);
@@ -521,7 +506,7 @@ module.exports = class extends Component {
 
 			const size = dragComponentSize(node, axis, marginOffset, next);
 			sizes.push(size);
-			nodes.push(node);
+			nodes.push(node.sortableInfo);
 
 			let halfs = (lastSize || 0) + size;
 			if(!substract) halfs = -halfs;
@@ -533,7 +518,8 @@ module.exports = class extends Component {
 		}
 	}
 
-	calculateDragBoundaries(index, newIndex = index, nodes = this.manager.getOrderedRefs()){
+	calculateDragBoundaries(index, newIndex = index){
+		const { nodes } = this.manager;
 		const { axis } = this.props;
 		const marginOffset = this.dragLayer.marginOffset[axis];
 
@@ -543,10 +529,11 @@ module.exports = class extends Component {
 
 		let prevIndex = index - differnece;
 		if(differnece >= 0) prevIndex--;
-		const prevNode = newIndex > 0 ? nodes[prevIndex].node : void 0;
+		const prevNode = nodes[prevIndex];
+
 		let nextIndex = index - differnece;
 		if(differnece <= 0) nextIndex++;
-		const nextNode = newIndex < nodes.length - 1 ? nodes[nextIndex].node : void 0;
+		const nextNode = nodes[nextIndex];
 
 		this.dragBoundaries.differnece = differnece;
 
@@ -557,8 +544,8 @@ module.exports = class extends Component {
 		this.dragBoundaries.belowSizes = oldDragBoundaries.belowSizes;
 
 		if(differnece === 0){
-			cleanTranform(oldDragBoundaries.aboveNodes);
-			cleanTranform(oldDragBoundaries.belowNodes);
+			cleanTransform(oldDragBoundaries.aboveNodes, nodes);
+			cleanTransform(oldDragBoundaries.belowNodes, nodes);
 
 			const aboveNodes = [];
 			const aboveSizes = [];
@@ -569,14 +556,14 @@ module.exports = class extends Component {
 			if(prevNode){
 				const size = dragComponentSize(prevNode, axis, marginOffset, -1);
 				this.dragBoundaries.prev = size;
-				aboveNodes.push(prevNode);
+				aboveNodes.push(prevNode.sortableInfo);
 				aboveSizes.push(size);
 			}
 
 			if(nextNode){
 				const size = dragComponentSize(nextNode, axis, marginOffset, 1);
 				this.dragBoundaries.next = size;
-				belowNodes.push(nextNode);
+				belowNodes.push(nextNode.sortableInfo);
 				belowSizes.push(size);
 			}
 
@@ -601,20 +588,22 @@ module.exports = class extends Component {
 				next: 1
 			};
 
-			if(!shouldPop){ // Add nodes
-				this.calculateBoundary(above, `above`, axis, marginOffset, isMovingUp, oldDragBoundaries);
-				this.calculateBoundary(below, `below`, axis, marginOffset, !isMovingUp, oldDragBoundaries);
-			}else{ // Remove nodes
+			if(shouldPop){ // Remove nodes
 				this.calculateReturningBoundary(above, `above`, isMovingUp, oldDragBoundaries);
 				this.calculateReturningBoundary(below, `below`, !isMovingUp, oldDragBoundaries);
+			}else{ // Add nodes
+				this.calculateBoundary(above, `above`, axis, marginOffset, isMovingUp, oldDragBoundaries);
+				this.calculateBoundary(below, `below`, axis, marginOffset, !isMovingUp, oldDragBoundaries);
 			}
 		}
-
-		// console.log(this.dragBoundaries);
 	}
 
-	animateNode(node){
+	animateNode(node: HTMLElement, taskIndex: ?number){
 		if(!node) return;
+
+		if(this.index === taskIndex){
+			return Ghost.addStyles(node);
+		}
 
 		const axis = this.props.axis.toUpperCase();
 		const size = do{
@@ -648,19 +637,16 @@ module.exports = class extends Component {
 			this.newIndex = this.index;
 		}
 
-		// console.log(translate, prev, next, deltaScroll, this.host);
 		if(prev && translate < prev){
 			this.newIndex--;
-			const nodes = this.manager.getOrderedRefs(); // TODO: Remove for performance
-			const ref = nodes[this.newIndex];
-			this.animateNode(ref ? ref.node : null);
-			this.calculateDragBoundaries(this.index, this.newIndex, nodes);
+			const node = this.manager.nodes[this.newIndex];
+			this.animateNode(node);
+			this.calculateDragBoundaries(this.index, this.newIndex);
 		}else if(next && translate > next){
 			this.newIndex++;
-			const nodes = this.manager.getOrderedRefs(); // TODO: Remove for performance
-			const ref = nodes[this.newIndex];
-			this.animateNode(ref ? ref.node : null);
-			this.calculateDragBoundaries(this.index, this.newIndex, nodes);
+			const node = this.manager.nodes[this.newIndex];
+			this.animateNode(node);
+			this.calculateDragBoundaries(this.index, this.newIndex);
 		}
 	}
 
@@ -709,21 +695,11 @@ module.exports = class extends Component {
 		}, 5);
 	}
 
-	getWrappedInstance(){
-		invariant(
-			this.props.config.withRef,
-			`To access the wrapped instance, you need to pass in {withRef: true} as the second argument of the SortableContainer() call`,
-		);
-		return this.refs.wrappedInstance;
-	}
-
 	render(){
-		const { component: Component, config } = this.props;
+		const { component: Component, items } = this.props;
 
 		const { transitionPrefix, transitionDuration } = this.dragLayer;
 
-		const ref = config.withRef ? `wrappedInstance` : null;
-
-		return <Component ref={ref} transitionName={transitionPrefix} transitionDuration={transitionDuration} {...omit(this.props, propKeys)} />;
+		return <Component transitionName={transitionPrefix} transitionDuration={transitionDuration} items={items} {...omit(this.props, propKeys)} />;
 	}
 };

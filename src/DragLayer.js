@@ -82,15 +82,14 @@ module.exports = class {
 
 	startDrag(parent, list, e){
 		const offset = getOffset(e);
-		const activeNode = list.manager.getActive();
+		const node = list.manager.getActive();
 
-		if(!activeNode) return false;
+		if(!node) return false;
 
 		const {
 			axis,
 			getHelperDimensions
 		} = list.props;
-		const { node } = activeNode;
 		const { index } = node.sortableInfo;
 		const margin = getElementMargin(node);
 		const containerBoundingRect = list.container.getBoundingClientRect();
@@ -107,7 +106,6 @@ module.exports = class {
 		this.currentList = list;
 
 		this.axis = axis;
-		this.offsetEdge = list.getEdgeOffset(node);
 		this.listInitialOffset = this.initialOffset = offset;
 
 		const fields = node.querySelectorAll(`input, textarea, select`);
@@ -149,7 +147,7 @@ module.exports = class {
 			this.styleElement.build(getCSSPixelValue(style.height));
 		}
 
-		return activeNode;
+		return node;
 	}
 
 	stopDrag(){
@@ -205,7 +203,7 @@ module.exports = class {
 			y: offset.y - this.initialOffset.y - scrollOffset.y
 		};
 
-		this.helper.style[`transform`] = `translate3d(${position.x}px,${position.y}px,0px)`;
+		this.helper.style.transform = `translate3d(${position.x}px,${position.y}px,0px)`;
 
 		/* eslint-disable no-var */
 		if(this.listInitialOffset === this.initialOffset){
@@ -252,7 +250,7 @@ module.exports = class {
 		setTimeout(() => {
 			this.animating = false;
 
-			const rect = closestList.sortableGhost.getBoundingClientRect();
+			const rect = closestList.sortableGhost.node.getBoundingClientRect();
 			this.listInitialOffset = getCoordinates(rect, closestList, this.axis);
 			this.setTranslateBoundaries(closestList.container.getBoundingClientRect(), closestList, rect);
 		}, this.transitionDuration);

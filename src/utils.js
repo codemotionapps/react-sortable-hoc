@@ -88,22 +88,6 @@ export function getElementMargin(element){
 	};
 }
 
-export function dragComponentSize(node, axis, marginOffset, next){
-	const sizeAttribute = attributes.offset[axis];
-
-	const size = node[sizeAttribute] + marginOffset;
-	return size * next / 2;
-}
-
-export function cleanTranform(array){
-	if(array && array.length){
-		let element;
-		while(element = array.pop()){
-			element.style.transform = ``;
-		}
-	}
-}
-
 export const attributes = {
 	scroll: {
 		x: `scrollLeft`,
@@ -116,8 +100,29 @@ export const attributes = {
 	size: {
 		x: `width`,
 		y: `height`
+	},
+	coordinate: {
+		x: `left`,
+		y: `top`
 	}
 };
+
+export function dragComponentSize(node, axis, marginOffset, next){
+	const sizeAttribute = attributes.offset[axis];
+
+	const size = node[sizeAttribute] + marginOffset;
+	return size * next / 2;
+}
+
+export function cleanTransform(array: Array, nodes: Object){
+	if(array && array.length){
+		let item;
+		while(item = array.pop()){
+			const node = nodes[item.index];
+			node && (node.style.transform = ``);
+		}
+	}
+}
 
 function distanceRect(x, y, rect){
 	const dx = x - clamp(x, rect.left, rect.right);
@@ -176,7 +181,7 @@ export function getCoordinates(element, list, axis){
 			element.top + list.scrollContainer.scrollTop;
 		}
 	};
-};
+}
 
 export function isScrollable(element){
 	return element.offsetHeight !== element.scrollHeight;
@@ -184,4 +189,4 @@ export function isScrollable(element){
 
 export function arrayLast(array){
 	return array[array.length - 1];
-};
+}

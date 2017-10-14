@@ -1,4 +1,3 @@
-const invariant = require(`invariant`);
 const PropTypes = require(`prop-types`);
 const React = require(`react`);
 const { Component } = React;
@@ -8,7 +7,6 @@ const { omit } = require(`./utils`);
 
 const propTypes = {
 	index: PropTypes.number.isRequired,
-	config: PropTypes.object,
 	component: PropTypes.func.isRequired
 };
 
@@ -21,55 +19,52 @@ module.exports = class extends Component {
 
 	static propTypes = propTypes;
 
-	static defaultProps = {
-		config: {withRef: false}
-	};
+	constructor(props){
+		super(props);
+
+		this.index = this.props.index;
+	}
 
 	componentDidMount(){
-		const { index } = this.props;
+		this.setDraggable(this.index);
 
-		this.setDraggable(index);
+		const manager = this.context.manager;
+		if(manager.isActive){
+			manager.list.animateNode(this.node, this.index);
+		}
 	}
 
 	componentWillReceiveProps(nextProps){
-		if(this.props.index !== nextProps.index && this.node){
-			this.node.sortableInfo.index = nextProps.index;
+		if(this.index !== nextProps.index && this.node){
+			this.setDraggable(nextProps.index);
+			this.removeDraggable(this.index);
+
+			this.index = nextProps.index;
 		}
 	}
 
 	componentWillUnmount(){
-		this.removeDraggable();
+		this.removeDraggable(this.index);
 	}
 
-	setDraggable(index){
-		const node = this.node = findDOMNode(this);
+	setDraggable(index: number){
+		const node = this.node || (this.node = findDOMNode(this));
 
 		node.sortableInfo = {
 			index,
 			manager: this.context.manager
 		};
 
-		this.ref = {node};
-		this.context.manager.add(this.ref);
+		this.context.manager.add(index, node);
 	}
 
-	removeDraggable(){
-		this.context.manager.remove(this.ref);
-	}
-
-	getWrappedInstance(){
-		invariant(
-			this.props.config.withRef,
-			`To access the wrapped instance, you need to pass in {withRef: true} as the second argument of the SortableElement() call`
-		);
-		return this.refs.wrappedInstance;
+	removeDraggable(index: number){
+		this.context.manager.remove(index, this.node);
 	}
 
 	render(){
-		const { component: Component, config } = this.props;
+		const { component: Component } = this.props;
 
-		const ref = config.withRef ? `wrappedInstance` : null;
-
-		return <Component ref={ref} {...omit(this.props, propKeys)} />;
+		return <Component {...omit(this.props, propKeys)} />;
 	}
 };
