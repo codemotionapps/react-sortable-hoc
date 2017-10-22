@@ -3,10 +3,14 @@ class Nodes {
 		const mapped = [];
 
 		for(const i in this){
-			mapped.push(mapper(this[i]));
+			mapped.push(mapper(this[i], i));
 		}
 
 		return mapped;
+	}
+
+	get length(){
+		return Object.keys(this).length;
 	}
 }
 

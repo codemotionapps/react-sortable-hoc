@@ -1,7 +1,6 @@
 const PropTypes = require(`prop-types`);
 const React = require(`react`);
 const { Component } = React;
-const { findDOMNode } = require(`react-dom`);
 
 const { omit } = require(`./utils`);
 
@@ -22,8 +21,10 @@ module.exports = class extends Component {
 	constructor(props){
 		super(props);
 
-		this.index = this.props.index;
+		this.index = props.index;
 	}
+
+	getRef = ref => this.ref = ref;
 
 	componentDidMount(){
 		this.setDraggable(this.index);
@@ -48,7 +49,7 @@ module.exports = class extends Component {
 	}
 
 	setDraggable(index: number){
-		const node = this.node || (this.node = findDOMNode(this));
+		const node = this.node || (this.node = this.ref);
 
 		node.sortableInfo = {
 			index,
@@ -65,6 +66,6 @@ module.exports = class extends Component {
 	render(){
 		const { component: Component } = this.props;
 
-		return <Component {...omit(this.props, propKeys)} />;
+		return <Component {...omit(this.props, propKeys)} getRef={this.getRef} />;
 	}
 };
