@@ -149,16 +149,20 @@ export function getCoordinate(element, axis){ // Margin not included
 
 export function closestNode(coordinates, nodes, axis){
 	const [a, b] = coordinates;
-	const distances = nodes.map(c => (
-		c = getCoordinate(c, axis),
-		Math.min(a - c, b - c)
-	));
+	const distances = nodes.map((node, index) => {
+		const diff = getCoordinate(node, axis);
+		return {
+			diff: Math.min(a - diff, b - diff),
+			index,
+			node
+		};
+	});
 
 	if(distances.length === 0) return 0;
 
-	return distances.indexOf(distances.reduce(
-		(prev, curr) => Math.abs(curr) < Math.abs(prev) ? curr : prev
-	));
+	return distances.reduce((prev, curr) =>
+		Math.abs(curr.diff) < Math.abs(prev.diff) ? curr : prev
+	);
 }
 
 export function getHelperBoundaries(node, axis){

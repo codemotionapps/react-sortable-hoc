@@ -3,7 +3,6 @@ const findIndex = require(`lodash.findindex`);
 const PropTypes = require(`prop-types`);
 const React = require(`react`);
 const { Component } = React;
-const { findDOMNode } = require(`react-dom`);
 
 const DragLayer = require(`./DragLayer`);
 
@@ -91,6 +90,8 @@ module.exports = class extends Component {
 		};
 	}
 
+	getRef = ref => this.container = ref;
+
 	static defaultProps = {
 		axis: `y`,
 		pressThreshold: 5,
@@ -141,7 +142,7 @@ module.exports = class extends Component {
 			axis
 		} = this.props;
 
-		this.dragLayer.listContainers[this.indexInLayer] = this.container = findDOMNode(this);
+		this.dragLayer.listContainers[this.indexInLayer] = this.container;
 
 		this.document = this.container.ownerDocument || document;
 
@@ -273,32 +274,32 @@ module.exports = class extends Component {
 			node = this.dragLayer.startDrag(this.document.body, this, e);
 		}
 
-		if(node){
-			const {
-				helperClass,
-				onSortStart,
-				axis
-			} = this.props;
-			const { index } = node.sortableInfo;
+		this.initialWindowScroll = {
+			top: window.scrollY,
+			left: window.scrollX
+		};
 
-			this.index = index;
-			this.newIndex = index;
+		if(!node) return;
 
-			this.setInitialScroll(axis);
+		const {
+			helperClass,
+			onSortStart,
+			axis
+		} = this.props;
+		const { index } = node.sortableInfo;
 
-			this.initialWindowScroll = {
-				top: window.scrollY,
-				left: window.scrollX
-			};
+		this.index = index;
+		this.newIndex = index;
 
-			this.sortableGhost = new Ghost(node);
+		this.setInitialScroll(axis);
 
-			if(helperClass) this.dragLayer.helper.classList.add(helperClass);
+		this.sortableGhost = new Ghost(node);
 
-			this.sorting = true;
+		if(helperClass) this.dragLayer.helper.classList.add(helperClass);
 
-			if(onSortStart) onSortStart({node, index});
-		}
+		this.sorting = true;
+
+		if(onSortStart) onSortStart({node, index});
 	}
 
 	handleSortMove(e){
@@ -425,29 +426,27 @@ module.exports = class extends Component {
 
 		const coordinates = getHelperBoundaries(helper, axis);
 
-		const nodes = this.manager.nodes.map(n => n);
+		const nodes = this.manager.nodes;
 
 		if(nodes && nodes.length > 0){
-			let nodeIndex = closestNode(coordinates, nodes, axis);
+			const closest = closestNode(coordinates, nodes, axis);
+
+			let { index } = closest;
+			const { node } = closest;
 
 			const sizeAttr = attributes.size[axis];
 			const cAttr = attributes.coordinate[axis];
 
-			const node = nodes[nodeIndex];
 			const rect = node.getBoundingClientRect();
 			const boundary = rect[cAttr] + (rect[sizeAttr] / 2);
 
-			if(nodes.length > nodeIndex && coordinates[1] > boundary) nodeIndex++;
-			if(nodeIndex > 0 && coordinates[0] < boundary) nodeIndex--;
+			if(nodes.length > index && coordinates[1] > boundary) index++;
+			// if(index > 0 && coordinates[0] < boundary) index--;
 
-			return {
-				index: nodeIndex
-			};
+			return index;
 		}
 
-		return {
-			index: 0
-		};
+		return 0;
 	}
 
 	checkActive(e){
@@ -456,14 +455,14 @@ module.exports = class extends Component {
 
 		const node = closest(e.target, el => Boolean(el.sortableInfo));
 		if(node && node.sortableInfo){
-			const nodes = this.manager.nodes.map(n => n);
+			const nodes = this.manager.nodes;
 
 			if(nodes){
 				const { helper } = this.dragLayer;
 				const { axis } = this.props;
 
 				const coordinates = getHelperBoundaries(helper, axis);
-				const index = closestNode(coordinates, nodes, axis);
+				const { index } = closestNode(coordinates, nodes, axis);
 				this.manager.active = {
 					index,
 					item: this.props.items[index]
@@ -700,6 +699,12 @@ module.exports = class extends Component {
 
 		const { transitionPrefix, transitionDuration } = this.dragLayer;
 
-		return <Component transitionName={transitionPrefix} transitionDuration={transitionDuration} items={items} {...omit(this.props, propKeys)} />;
+		return <Component
+			transitionName={transitionPrefix}
+			transitionDuration={transitionDuration}
+			items={items}
+			getRef={this.getRef}
+			{...omit(this.props, propKeys)}
+		/>;
 	}
 };

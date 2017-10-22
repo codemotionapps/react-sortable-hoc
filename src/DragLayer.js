@@ -232,7 +232,7 @@ module.exports = class {
 		const { item } = this.currentList.manager.active;
 		this.active = item;
 
-		const { index } = closestList.getClosestNode();
+		const index = closestList.getClosestNode();
 		closestList.manager.active = {
 			index,
 			item
