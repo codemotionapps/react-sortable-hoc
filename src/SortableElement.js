@@ -30,7 +30,7 @@ module.exports = class extends Component {
 		this.setDraggable(this.index);
 
 		const manager = this.context.manager;
-		if(manager.isActive){
+		if(manager.list.sorting){
 			manager.list.animateNode(this.node, this.index);
 		}
 	}
