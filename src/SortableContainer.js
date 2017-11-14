@@ -268,7 +268,7 @@ module.exports = class extends Component {
 		if(this.dragLayer.helper){
 			if(this.manager.active){
 				this.checkActiveIndex();
-				node = this.manager.getActive();
+				node = this.manager.activeNode;
 			}
 		}else{
 			node = this.dragLayer.startDrag(this.document.body, this, e);
@@ -450,7 +450,7 @@ module.exports = class extends Component {
 	}
 
 	checkActive(e){
-		const active = this.manager.active;
+		const { active } = this.manager;
 		if(active) return true;
 
 		const node = closest(e.target, el => Boolean(el.sortableInfo));

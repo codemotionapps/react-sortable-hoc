@@ -82,7 +82,7 @@ module.exports = class {
 
 	startDrag(parent, list, e){
 		const offset = getOffset(e);
-		const node = list.manager.getActive();
+		const node = list.manager.activeNode;
 
 		if(!node) return false;
 

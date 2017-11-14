@@ -33,7 +33,7 @@ module.exports = class {
 		return Boolean(this.active);
 	}
 
-	getActive(){
+	get activeNode(){
 		if(!this.active) return null;
 
 		return this.nodes[this.active.index];
