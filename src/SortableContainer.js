@@ -33,6 +33,7 @@ const propTypes = {
 	onDragEnd: PropTypes.func,
 	shouldCancelStart: PropTypes.func,
 	distance: PropTypes.number,
+	useDragHandle: PropTypes.bool,
 	useWindowAsScrollContainer: PropTypes.bool,
 	lockOffset: PropTypes.oneOfType([
 		PropTypes.number,
@@ -212,6 +213,9 @@ module.exports = class extends Component {
 		const node = closest(e.target, el => Boolean(el.sortableInfo));
 
 		if(node && node.sortableInfo && this.nodeIsChild(node) && !this.sorting){
+			const { useDragHandle } = this.props;
+			if(useDragHandle && !closest(e.target, el => Boolean(el.sortableHandle))) return;
+
 			const { index } = node.sortableInfo;
 
 			this.manager.active = {index, item: items[index]};
