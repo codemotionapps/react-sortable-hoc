@@ -222,6 +222,7 @@ module.exports = class {
 	}
 
 	updateTargetContainer(e){
+		if(!this.helper) return;
 		if(this.animating) return;
 
 		const { pageX, pageY } = this.delta;
