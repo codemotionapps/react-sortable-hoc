@@ -1,6 +1,6 @@
 {
   "name": "@codemotion/react-sortable-hoc",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "Set of components to turn any list into a sortable, animated list",
   "author": {
     "name": "Clauderic Demers",
@@ -58,6 +58,9 @@
     "eslint-plugin-react": "7.3.0",
     "react": "16.2.0",
     "react-dom": "16.2.0"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
   },
   "xo": {
     "esnext": true,
