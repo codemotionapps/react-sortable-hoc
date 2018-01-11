@@ -14,7 +14,7 @@ class Nodes {
 	}
 }
 
-module.exports = class {
+module.exports = class Manager {
 	nodes = new Nodes();
 
 	constructor(list){

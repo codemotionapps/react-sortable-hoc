@@ -1,5 +1,4 @@
 const invariant = require(`invariant`);
-const findIndex = require(`lodash.findindex`);
 const PropTypes = require(`prop-types`);
 const React = require(`react`);
 const { Component } = React;
@@ -23,9 +22,11 @@ const {
 
 const propTypes = {
 	axis: PropTypes.oneOf([`x`, `y`]),
-	component: PropTypes.func.isRequired,
+	domRef: PropTypes.func,
+	component: PropTypes.oneOfType([PropTypes.func, PropTypes.string]).isRequired,
 	items: PropTypes.array.isRequired,
 	dragLayer: PropTypes.object,
+	disabled: PropTypes.bool,
 	helperClass: PropTypes.string,
 	contentWindow: PropTypes.any,
 	onSortStart: PropTypes.func,
@@ -34,7 +35,7 @@ const propTypes = {
 	shouldCancelStart: PropTypes.func,
 	distance: PropTypes.number,
 	useDragHandle: PropTypes.bool,
-	useWindowAsScrollContainer: PropTypes.bool,
+	scrollContainer: PropTypes.object,
 	lockOffset: PropTypes.oneOfType([
 		PropTypes.number,
 		PropTypes.string,
@@ -76,7 +77,7 @@ class Ghost {
 	}
 }
 
-module.exports = class extends Component {
+module.exports = class SortableContainer extends Component {
 	constructor(props){
 		super(props);
 		this.dragLayer = props.dragLayer || new DragLayer();
@@ -91,13 +92,16 @@ module.exports = class extends Component {
 		};
 	}
 
-	getRef = ref => this.container = ref;
+	getRef = ::this.getRef;
+	getRef(ref){
+		this.container = ref;
+		const { domRef } = this.props;
+		domRef && domRef(ref);
+	}
 
 	static defaultProps = {
 		axis: `y`,
-		pressThreshold: 5,
 		distance: 0,
-		useWindowAsScrollContainer: false,
 		contentWindow: typeof window !== `undefined` ? window : null,
 		shouldCancelStart(e){
 			// Cancel sorting if the event target is an `input`, `textarea`, `select` or `option`
@@ -139,7 +143,7 @@ module.exports = class extends Component {
 	componentDidMount(){
 		const {
 			contentWindow,
-			useWindowAsScrollContainer,
+			scrollContainer,
 			axis
 		} = this.props;
 
@@ -147,13 +151,7 @@ module.exports = class extends Component {
 
 		this.document = this.container.ownerDocument || document;
 
-		this.scrollContainer = do{
-			if(useWindowAsScrollContainer){
-				this.document.body;
-			}else{
-				this.container;
-			}
-		};
+		this.scrollContainer = scrollContainer || this.container;
 
 		this.setInitialScroll(axis);
 		this.contentWindow = do{
@@ -190,7 +188,7 @@ module.exports = class extends Component {
 	checkActiveIndex(nextProps){
 		const { items } = nextProps || this.props;
 		const { item } = this.manager.active;
-		const newIndex = findIndex(items, item);
+		const newIndex = items.indexOf(item);
 		if(newIndex === -1){
 			this.dragLayer.stopDrag();
 			return;
@@ -200,6 +198,8 @@ module.exports = class extends Component {
 	}
 
 	handleStart(e){
+		if(this.props.disabled) return;
+
 		const p = getOffset(e);
 		const { shouldCancelStart, items, distance } = this.props;
 
@@ -232,7 +232,7 @@ module.exports = class extends Component {
 	}
 
 	handleMove(e){
-		const { distance, pressThreshold } = this.props;
+		const { distance } = this.props;
 		const p = getOffset(e);
 
 		if(this.sorting || !this._touched) return;
@@ -243,7 +243,7 @@ module.exports = class extends Component {
 		};
 		const delta = Math.abs(this._delta.x) + Math.abs(this._delta.y);
 
-		if(!distance && (!pressThreshold || (pressThreshold && delta >= pressThreshold))){
+		if(!distance){
 			clearTimeout(this.cancelTimer);
 			this.cancelTimer = setTimeout(this.cancel, 0);
 		}else if(distance && delta >= distance && this.manager.isActive){
@@ -267,7 +267,7 @@ module.exports = class extends Component {
 	}
 
 	handlePress(e){
-		this.isScrollable = isScrollable(this.container);
+		this.isScrollable = isScrollable(this.scrollContainer);
 		let node = null;
 		if(this.dragLayer.helper){
 			if(this.manager.active){
@@ -669,14 +669,15 @@ module.exports = class extends Component {
 			translate -= deltaScroll;
 		}
 
-		if(translate >= this.dragLayer.maxTranslate){
+		const { maxTranslate, minTranslate } = this.dragLayer;
+		if(translate >= maxTranslate){
 			direction = 1; // Scroll Down/Right
 			scroll = true;
-			speed = acceleration * Math.abs((this.dragLayer.maxTranslate - translate) / this.dragLayer[size]);
+			speed = acceleration * Math.abs((maxTranslate - translate) / this.dragLayer[size]);
 		}else if(translate <= this.dragLayer.minTranslate){
 			direction = -1; // Scroll Up/Left
 			scroll = true;
-			speed = acceleration * Math.abs((translate - this.dragLayer.minTranslate) / this.dragLayer[size]);
+			speed = acceleration * Math.abs((translate - minTranslate) / this.dragLayer[size]);
 		}
 
 		clearInterval(this.autoscrollInterval);
@@ -701,14 +702,19 @@ module.exports = class extends Component {
 	render(){
 		const { component: Component, items } = this.props;
 
+		const props = omit(this.props, propKeys);
+
+		if(typeof Component === "string"){
+			props.ref = this.getRef;
+		}else{
+			props.transitionName = transitionPrefix;
+			props.transitionDuration = transitionDuration;
+			props.items = items;
+			props.getRef = this.getRef;
+		}
+
 		const { transitionPrefix, transitionDuration } = this.dragLayer;
 
-		return <Component
-			transitionName={transitionPrefix}
-			transitionDuration={transitionDuration}
-			items={items}
-			getRef={this.getRef}
-			{...omit(this.props, propKeys)}
-		/>;
+		return <Component {...props} />;
 	}
 };

@@ -1,7 +1,7 @@
 {
   "name": "@codemotion/react-sortable-hoc",
   "version": "0.0.1",
-  "description": "Set of higher-order components to turn any list into a sortable, touch-friendly, animated list",
+  "description": "Set of components to turn any list into a sortable, animated list",
   "author": {
     "name": "Clauderic Demers",
     "email": "me@ced.io"
@@ -9,7 +9,6 @@
   "user": "clauderic",
   "homepage": "https://github.com/codemotion/react-sortable-hoc",
   "main": "src/index.js",
-  "jsnext:main": "dist/es6/index.js",
   "license": "MIT",
   "scripts": {
     "prepublishOnly": "npm install; yarn"
@@ -36,10 +35,7 @@
     "component"
   ],
   "dependencies": {
-    "babel-runtime": "^6.26.0",
     "invariant": "^2.2.2",
-    "lodash.debounce": "^4.0.8",
-    "lodash.findindex": "^4.6.0",
     "prop-types": "^15.5.10"
   },
   "peerDependencies": {
@@ -60,8 +56,8 @@
     "eslint-config-dimitarnestorov": "1.1.1",
     "eslint-plugin-babel": "4.1.2",
     "eslint-plugin-react": "7.3.0",
-    "react": "15.6.1",
-    "react-dom": "15.6.1"
+    "react": "16.2.0",
+    "react-dom": "16.2.0"
   },
   "xo": {
     "esnext": true,
