@@ -114,7 +114,7 @@ export function dragComponentSize(node, axis, marginOffset, next){
 	return size * next / 2;
 }
 
-export function cleanTransform(array: Array, nodes: Object){
+export function cleanTransform(array: Array<object>, nodes: Object){
 	if(array && array.length){
 		let item;
 		while(item = array.pop()){

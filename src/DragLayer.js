@@ -7,7 +7,7 @@ const {
 	getCoordinates
 } = require(`./utils`);
 
-module.exports = class {
+module.exports = class DragLayer {
 	constructor(className, transitionDuration){
 		this.helper = null;
 		this.lists = [];
@@ -24,7 +24,7 @@ module.exports = class {
 			this.styleElement = document.createElement(`style`);
 			this.styleElement.type = `text/css`;
 			this.styleElement.build = function(height){
-				this.innerText = `.${className}-leave, .${className}-enter.${className}-enter-active{height:${height}px;}`;
+				this.innerText = `.${className}.${className}-leave, .${className}.${className}-enter.${className}-enter-active{height:${height}px;}`;
 			};
 		}
 
@@ -48,7 +48,7 @@ module.exports = class {
 	}
 
 	setTranslateBoundaries(containerBoundingRect, list, rect){
-		const { useWindowAsScrollContainer } = list.props;
+		const { scrollContainer } = list.props;
 
 		this.minTranslate = {};
 		this.maxTranslate = {};
@@ -65,16 +65,8 @@ module.exports = class {
 		}
 		/* eslint-enable no-var */
 
-		let containerTop;
-		let containerSize;
-
-		if(useWindowAsScrollContainer){
-			containerTop = 0;
-			containerSize = list.contentWindow[innerSize];
-		}else{
-			containerTop = containerBoundingRect[rectAttr];
-			containerSize = containerTop + containerBoundingRect[sizeAttr];
-		}
+		const containerTop = containerBoundingRect[rectAttr];
+		const containerSize = containerTop + containerBoundingRect[sizeAttr];
 
 		this.minTranslate = containerTop - rect[rectAttr];
 		this.maxTranslate = containerSize - rect[rectAttr] - rect[sizeAttr];
@@ -92,7 +84,7 @@ module.exports = class {
 		} = list.props;
 		const { index } = node.sortableInfo;
 		const margin = getElementMargin(node);
-		const containerBoundingRect = list.container.getBoundingClientRect();
+		const containerBoundingRect = list.scrollContainer.getBoundingClientRect();
 		const dimensions = getHelperDimensions({index, node});
 
 		this.width = dimensions.width;
@@ -102,7 +94,6 @@ module.exports = class {
 			y: Math.max(margin.top, margin.bottom)
 		};
 		this.boundingClientRect = node.getBoundingClientRect();
-		this.containerBoundingRect = containerBoundingRect;
 		this.currentList = list;
 
 		this.axis = axis;
@@ -166,7 +157,11 @@ module.exports = class {
 	handleSortEnd(e){
 		if(this.stopAnimation){
 			document.head.appendChild(this.stopAnimation);
-			setTimeout(() => document.head.removeChild(this.stopAnimation));
+			setTimeout(() => {
+				if(this.stopAnimation.parentElement){
+					document.head.removeChild(this.stopAnimation);
+				}
+			});
 		}
 
 		if(this.listenerNode){
@@ -184,9 +179,11 @@ module.exports = class {
 			this.currentList.handleSortEnd(e);
 		}
 
-		if(this.styleElement){
-			setTimeout(() => document.head.removeChild(this.styleElement));
-		}
+		if(this.styleElement) setTimeout(() => {
+			if(this.styleElement.parentElement){
+				document.head.removeChild(this.styleElement);
+			}
+		});
 	}
 
 	updatePosition(e){
@@ -253,7 +250,11 @@ module.exports = class {
 
 			const rect = closestList.sortableGhost.node.getBoundingClientRect();
 			this.listInitialOffset = getCoordinates(rect, closestList, this.axis);
-			this.setTranslateBoundaries(closestList.container.getBoundingClientRect(), closestList, rect);
+			this.setTranslateBoundaries(
+				closestList.scrollContainer.getBoundingClientRect(),
+				closestList,
+				rect
+			);
 		}, this.transitionDuration);
 	}
 };

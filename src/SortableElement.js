@@ -11,7 +11,7 @@ const propTypes = {
 
 const propKeys = Object.keys(propTypes);
 
-module.exports = class extends Component {
+module.exports = class SortableElement extends Component {
 	static contextTypes = {
 		manager: PropTypes.object.isRequired
 	};
@@ -37,8 +37,8 @@ module.exports = class extends Component {
 
 	componentWillReceiveProps(nextProps){
 		if(this.index !== nextProps.index && this.node){
-			this.setDraggable(nextProps.index);
 			this.removeDraggable(this.index);
+			this.setDraggable(nextProps.index);
 
 			this.index = nextProps.index;
 		}
