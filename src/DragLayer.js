@@ -47,19 +47,15 @@ module.exports = class DragLayer {
 		}
 	}
 
-	setTranslateBoundaries(containerBoundingRect, list, rect){
-		const { scrollContainer } = list.props;
-
+	setTranslateBoundaries(containerBoundingRect, rect){
 		this.minTranslate = {};
 		this.maxTranslate = {};
 
 		/* eslint-disable no-var */
 		if(this.axis === `x`){
-			var innerSize = `innerWidth`;
 			var rectAttr = `left`;
 			var sizeAttr = `width`;
 		}else{
-			var innerSize = `innerHeight`;
 			var rectAttr = `top`;
 			var sizeAttr = `height`;
 		}
@@ -126,7 +122,7 @@ module.exports = class DragLayer {
 
 		list.calculateDragBoundaries(index);
 
-		this.setTranslateBoundaries(containerBoundingRect, list, this.boundingClientRect);
+		this.setTranslateBoundaries(containerBoundingRect, this.boundingClientRect);
 
 		this.listenerNode = e.touches ? node : list.contentWindow;
 		events.move.forEach(event => this.listenerNode.addEventListener(event, this.events.handleSortMove, false));
@@ -179,11 +175,13 @@ module.exports = class DragLayer {
 			this.currentList.handleSortEnd(e);
 		}
 
-		if(this.styleElement) setTimeout(() => {
-			if(this.styleElement.parentElement){
-				document.head.removeChild(this.styleElement);
-			}
-		});
+		if(this.styleElement){
+			setTimeout(() => {
+				if(this.styleElement.parentElement){
+					document.head.removeChild(this.styleElement);
+				}
+			});
+		}
 	}
 
 	updatePosition(e){
@@ -252,7 +250,6 @@ module.exports = class DragLayer {
 			this.listInitialOffset = getCoordinates(rect, closestList, this.axis);
 			this.setTranslateBoundaries(
 				closestList.scrollContainer.getBoundingClientRect(),
-				closestList,
 				rect
 			);
 		}, this.transitionDuration);
