@@ -2,28 +2,6 @@
 
 const ClientRect = document.body.getBoundingClientRect().constructor;
 
-export function arrayMove(arr, previousIndex, newIndex){
-	const array = arr.slice(0);
-	if(newIndex === -1){
-		array.splice(previousIndex, 1);
-	}else{
-		if(newIndex >= array.length){
-			let k = newIndex - array.length;
-			while(k-- + 1){
-				array.push(undefined);
-			}
-		}
-		array.splice(newIndex, 0, array.splice(previousIndex, 1)[0]);
-	}
-	return array;
-}
-
-export function arrayInsert(arr, index, item){
-	const array = arr.slice(0);
-	array.splice(index, 0, item);
-	return array;
-}
-
 export function omit(obj, keysToOmit){
 	return Object.keys(obj).reduce((acc, key) => {
 		if(keysToOmit.indexOf(key) === -1) acc[key] = obj[key];
@@ -194,3 +172,5 @@ export function isScrollable(element){
 export function arrayLast(array){
 	return array[array.length - 1];
 }
+
+export function noop(){}

@@ -1,9 +1,9 @@
 const {
 	events,
 	getOffset,
-	getCSSPixelValue,
 	getElementMargin,
 	closestRect,
+	noop,
 	getCoordinates
 } = require(`./utils`);
 
@@ -20,12 +20,6 @@ module.exports = class DragLayer {
 			this.stopAnimation = document.createElement(`style`);
 			this.stopAnimation.type = `text/css`;
 			this.stopAnimation.innerText = `.${className}{transition:none;}`;
-
-			this.styleElement = document.createElement(`style`);
-			this.styleElement.type = `text/css`;
-			this.styleElement.build = function(height){
-				this.innerText = `.${className}.${className}-leave, .${className}.${className}-enter.${className}-enter-active{height:${height}px;}`;
-			};
 		}
 
 		this.events = {
@@ -116,7 +110,7 @@ module.exports = class DragLayer {
 		this.helper.style.width = `${this.width}px`;
 		this.helper.style.height = `${this.height}px`;
 		this.helper.style.boxSizing = `border-box`;
-		this.helper.style.pointerEvents = `none`;
+		// this.helper.style.pointerEvents = `none`;
 
 		list.host = true;
 
@@ -127,12 +121,6 @@ module.exports = class DragLayer {
 		this.listenerNode = e.touches ? node : list.contentWindow;
 		events.move.forEach(event => this.listenerNode.addEventListener(event, this.events.handleSortMove, false));
 		events.end.forEach(event => this.listenerNode.addEventListener(event, this.events.handleSortEnd, false));
-
-		if(this.styleElement){
-			document.head.appendChild(this.styleElement);
-			const style = getComputedStyle(this.helper);
-			this.styleElement.build(getCSSPixelValue(style.height));
-		}
 
 		return node;
 	}
@@ -165,22 +153,11 @@ module.exports = class DragLayer {
 			events.end.forEach(event => this.listenerNode.removeEventListener(event, this.events.handleSortEnd));
 		}
 
-		if(typeof this.onDragEnd === `function`){
-			this.onDragEnd();
-		}
 		// Remove the helper from the DOM
 		if(this.helper){
 			this.helper.parentNode.removeChild(this.helper);
 			this.helper = null;
 			this.currentList.handleSortEnd(e);
-		}
-
-		if(this.styleElement){
-			setTimeout(() => {
-				if(this.styleElement.parentElement){
-					document.head.removeChild(this.styleElement);
-				}
-			});
 		}
 	}
 
@@ -217,8 +194,8 @@ module.exports = class DragLayer {
 	}
 
 	updateTargetContainer(e){
+		if(this.swapping) return;
 		if(!this.helper) return;
-		if(this.animating) return;
 
 		const { pageX, pageY } = this.delta;
 		const closestList = this.lists[closestRect(pageX, pageY, this.listContainers)];
@@ -226,7 +203,6 @@ module.exports = class DragLayer {
 		if(closestList === this.currentList) return;
 
 		const { item } = this.currentList.manager.active;
-		this.active = item;
 
 		const index = closestList.getClosestNode();
 		closestList.manager.active = {
@@ -236,22 +212,24 @@ module.exports = class DragLayer {
 
 		this.currentList.handleSortEnd(e, closestList, index);
 
-		closestList.handlePress();
-		closestList.calculateDragBoundaries(closestList.index);
+		closestList.index = index;
 
-		this.currentList = closestList;
+		this.swapping = true;
+		closestList.manager.onInsert = (insertedIndex) => {
+			if(index !== insertedIndex) return;
+			delete this.swapping;
+			closestList.manager.onInsert = noop;
 
-		this.animating = true;
+			closestList.handlePress();
+			closestList.calculateDragBoundaries(closestList.index);
+			this.currentList = closestList;
 
-		setTimeout(() => {
-			this.animating = false;
-
-			const rect = closestList.sortableGhost.node.getBoundingClientRect();
+			const rect = closestList.sortableGhost.ref.getBoundingClientRect();
 			this.listInitialOffset = getCoordinates(rect, closestList, this.axis);
 			this.setTranslateBoundaries(
 				closestList.scrollContainer.getBoundingClientRect(),
 				rect
 			);
-		}, this.transitionDuration);
+		};
 	}
 };
