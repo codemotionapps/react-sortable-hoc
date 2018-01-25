@@ -14,6 +14,7 @@ const {
 	getHelperBoundaries,
 	dragComponentSize,
 	cleanTransform,
+	noop,
 	isScrollable,
 	arrayLast,
 	attributes,
@@ -29,9 +30,9 @@ const propTypes = {
 	disabled: PropTypes.bool,
 	helperClass: PropTypes.string,
 	contentWindow: PropTypes.any,
-	onSortStart: PropTypes.func,
-	onSortEnd: PropTypes.func,
-	onDragEnd: PropTypes.func,
+	onSortStart: PropTypes.func.isRequired,
+	onSortEnd: PropTypes.func.isRequired,
+	onSortSwap: PropTypes.func,
 	shouldCancelStart: PropTypes.func,
 	distance: PropTypes.number,
 	useDragHandle: PropTypes.bool,
@@ -49,40 +50,11 @@ const acceleration = 10;
 
 const propKeys = Object.keys(propTypes);
 
-class Ghost {
-	constructor(node){
-		this.info = node.sortableInfo;
-
-		Ghost.addStyles(node);
-	}
-
-	removeStyles(){
-		const node = this.node;
-
-		node.style.visibility = ``;
-		node.style.opacity = ``;
-		// node.style.transition = ``;
-	}
-
-	get node(){
-		return this.info.manager.nodes[this.info.index] || {
-			style: {}
-		};
-	}
-
-	static addStyles(node){
-		node.style.visibility = `hidden`;
-		node.style.opacity = 0;
-		// node.style.transition = `none`;
-	}
-}
-
 module.exports = class SortableContainer extends Component {
 	constructor(props){
 		super(props);
 		this.dragLayer = props.dragLayer || new DragLayer();
 		this.indexInLayer = this.dragLayer.addRef(this);
-		this.dragLayer.onDragEnd = props.onDragEnd;
 		this.manager = new Manager(this);
 		this.host = false;
 		this.events = {
@@ -117,6 +89,7 @@ module.exports = class SortableContainer extends Component {
 				return true; // Return true to cancel sorting
 			}
 		},
+		onSortSwap: noop,
 		lockOffset: `50%`,
 		getHelperDimensions: ({node}) => ({
 			width: node.offsetWidth,
@@ -245,18 +218,16 @@ module.exports = class SortableContainer extends Component {
 
 		if(!distance){
 			clearTimeout(this.cancelTimer);
-			this.cancelTimer = setTimeout(this.cancel, 0);
+			this.cancelTimer = setTimeout(this.cancel);
 		}else if(distance && delta >= distance && this.manager.isActive){
 			this.handlePress(e);
 		}
 	}
 
 	handleEnd(){
-		const { distance } = this.props;
-
 		this._touched = false;
 
-		if(!distance) this.cancel();
+		this.cancel();
 	}
 
 	cancel(){
@@ -297,7 +268,7 @@ module.exports = class SortableContainer extends Component {
 
 		this.setInitialScroll(axis);
 
-		this.sortableGhost = new Ghost(node);
+		this.sortableGhost = node.sortableInfo;
 
 		if(helperClass) this.dragLayer.helper.classList.add(helperClass);
 
@@ -307,7 +278,7 @@ module.exports = class SortableContainer extends Component {
 	}
 
 	handleSortMove(e){
-		if(!this.dragLayer.animating && this.checkActive(e)){
+		if(!this.dragLayer.swapping && this.checkActive(e)){
 			this.animateNodes();
 			if(this.isScrollable) this.autoscroll();
 		}
@@ -320,10 +291,6 @@ module.exports = class SortableContainer extends Component {
 		if(!this.manager.active){
 			console.warn(`there is no active node`, e);
 			return;
-		}
-
-		if(this.sortableGhost){
-			this.sortableGhost.removeStyles();
 		}
 
 		const nodes = this.manager.nodes;
@@ -342,30 +309,25 @@ module.exports = class SortableContainer extends Component {
 
 		this.sorting = false;
 
-		if(typeof onSortEnd === `function`){
-			// get the index in the new list
-			if(newList){
-				this.newIndex = newIndex;
-			}
-
-			onSortEnd({
-				oldIndex: this.index,
-				newIndex: this.newIndex,
-				newList
-			}, e);
+		if(newList){
+			this.newIndex = newIndex;
 		}
+
+		onSortEnd({
+			oldIndex: this.index,
+			newIndex: this.newIndex,
+			newList
+		}, e);
 
 		this._touched = false;
 	}
 
 	handleSortSwap(index, item){
 		const { onSortSwap } = this.props;
-		if(typeof onSortSwap === `function`){
-			onSortSwap({
-				index,
-				item
-			});
-		}
+		onSortSwap({
+			index,
+			item
+		});
 	}
 
 	getOffset(e){
@@ -601,23 +563,19 @@ module.exports = class SortableContainer extends Component {
 		}
 	}
 
-	animateNode(node: HTMLElement, taskIndex: ?number){
+	animateNode(node: HTMLElement){
 		if(!node) return;
-
-		if(this.index === taskIndex){
-			return Ghost.addStyles(node);
-		}
 
 		const axis = this.props.axis.toUpperCase();
 		const size = do{
 			if(axis === `X`) this.dragLayer.width + this.dragLayer.marginOffset.x;
 			else this.dragLayer.height + this.dragLayer.marginOffset.y;
 		};
-		const translate = `translate${axis}`;
+
 		if(this.index > this.newIndex){ // prev
-			node.style.transform = `${translate}(${size}px)`;
+			node.style.transform = `translate${axis}(${size}px)`;
 		}else if(this.index < this.newIndex){ // next
-			node.style.transform = `${translate}(${-size}px)`;
+			node.style.transform = `translate${axis}(${-size}px)`;
 		}else{
 			node.style.transform = ``;
 		}
@@ -654,8 +612,6 @@ module.exports = class SortableContainer extends Component {
 	}
 
 	autoscroll(){
-		if(this.dragLayer.animating) return;
-
 		const { axis } = this.props;
 		let translate = this.dragLayer.translate[axis];
 		let direction = 0;
@@ -704,7 +660,9 @@ module.exports = class SortableContainer extends Component {
 
 		const props = omit(this.props, propKeys);
 
-		if(typeof Component === "string"){
+		const { transitionPrefix, transitionDuration } = this.dragLayer;
+
+		if(typeof Component === `string`){
 			props.ref = this.getRef;
 		}else{
 			props.transitionName = transitionPrefix;
@@ -712,8 +670,6 @@ module.exports = class SortableContainer extends Component {
 			props.items = items;
 			props.getRef = this.getRef;
 		}
-
-		const { transitionPrefix, transitionDuration } = this.dragLayer;
 
 		return <Component {...props} />;
 	}

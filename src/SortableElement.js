@@ -1,6 +1,5 @@
 const PropTypes = require(`prop-types`);
 const React = require(`react`);
-const { Component } = React;
 
 const { omit } = require(`./utils`);
 
@@ -11,7 +10,7 @@ const propTypes = {
 
 const propKeys = Object.keys(propTypes);
 
-module.exports = class SortableElement extends Component {
+module.exports = class SortableElement extends React.Component {
 	static contextTypes = {
 		manager: PropTypes.object.isRequired
 	};
@@ -24,20 +23,19 @@ module.exports = class SortableElement extends Component {
 		this.index = props.index;
 	}
 
+	get manager(){
+		return this.context.manager;
+	}
+
 	getRef = ref => this.ref = ref;
 
 	componentDidMount(){
-		this.setDraggable(this.index);
-
-		const manager = this.context.manager;
-		if(manager.list.sorting){
-			manager.list.animateNode(this.node, this.index);
-		}
+		this.setDraggable();
 	}
 
 	componentWillReceiveProps(nextProps){
-		if(this.index !== nextProps.index && this.node){
-			this.removeDraggable(this.index);
+		if(this.index !== nextProps.index && this.ref){
+			this.removeDraggable();
 			this.setDraggable(nextProps.index);
 
 			this.index = nextProps.index;
@@ -45,22 +43,16 @@ module.exports = class SortableElement extends Component {
 	}
 
 	componentWillUnmount(){
-		this.removeDraggable(this.index);
+		this.removeDraggable();
 	}
 
-	setDraggable(index: number){
-		const node = this.node || (this.node = this.ref);
-
-		node.sortableInfo = {
-			index,
-			manager: this.context.manager
-		};
-
-		this.context.manager.add(index, node);
+	setDraggable(index: number = this.index){
+		this.ref.sortableInfo = this;
+		this.context.manager.add(index, this.ref);
 	}
 
-	removeDraggable(index: number){
-		this.context.manager.remove(index, this.node);
+	removeDraggable(index: number = this.index){
+		this.context.manager.remove(index, this.ref);
 	}
 
 	render(){

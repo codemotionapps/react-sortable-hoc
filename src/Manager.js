@@ -1,3 +1,5 @@
+const { noop } = require(`./utils`);
+
 class Nodes {
 	map(mapper){
 		const mapped = [];
@@ -16,6 +18,7 @@ class Nodes {
 
 module.exports = class Manager {
 	nodes = new Nodes();
+	onInsert = noop;
 
 	constructor(list){
 		this.list = list;
@@ -23,6 +26,7 @@ module.exports = class Manager {
 
 	add(index: number, node: HTMLElement){
 		this.nodes[index] = node;
+		this.onInsert(index);
 	}
 
 	remove(index: number, node: HTMLElement){
@@ -31,6 +35,10 @@ module.exports = class Manager {
 
 	get isActive(){
 		return Boolean(this.active);
+	}
+
+	get activeIndex(){
+		return this.active && this.active.index;
 	}
 
 	get activeNode(){
