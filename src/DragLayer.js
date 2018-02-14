@@ -217,6 +217,7 @@ module.exports = class DragLayer {
 		this.swapping = true;
 		closestList.manager.onInsert = (insertedIndex) => {
 			if(index !== insertedIndex) return;
+
 			delete this.swapping;
 			closestList.manager.onInsert = noop;
 

@@ -5,7 +5,7 @@ class Nodes {
 		const mapped = [];
 
 		for(const i in this){
-			mapped.push(mapper(this[i], i));
+			mapped.push(mapper(this[i], Number(i)));
 		}
 
 		return mapped;

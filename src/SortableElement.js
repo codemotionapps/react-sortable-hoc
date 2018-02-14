@@ -12,7 +12,8 @@ const propKeys = Object.keys(propTypes);
 
 module.exports = class SortableElement extends React.Component {
 	static contextTypes = {
-		manager: PropTypes.object.isRequired
+		manager: PropTypes.object.isRequired,
+		childSetDraggable: PropTypes.bool.isRequired
 	};
 
 	static propTypes = propTypes;
@@ -23,6 +24,13 @@ module.exports = class SortableElement extends React.Component {
 		this.index = props.index;
 	}
 
+	_draggable = false;
+
+	binds = {
+		setDraggable: ::this.setDraggable,
+		removeDraggable: ::this.removeDraggable
+	};
+
 	get manager(){
 		return this.context.manager;
 	}
@@ -30,13 +38,15 @@ module.exports = class SortableElement extends React.Component {
 	getRef = ref => this.ref = ref;
 
 	componentDidMount(){
-		this.setDraggable();
+		!this.context.childSetDraggable && this.setDraggable();
 	}
 
 	componentWillReceiveProps(nextProps){
-		if(this.index !== nextProps.index && this.ref){
-			this.removeDraggable();
-			this.setDraggable(nextProps.index);
+		if(this.index !== nextProps.index){
+			if(this._draggable && this.ref){
+				this.removeDraggable();
+				this.setDraggable(nextProps.index);
+			}
 
 			this.index = nextProps.index;
 		}
@@ -46,18 +56,28 @@ module.exports = class SortableElement extends React.Component {
 		this.removeDraggable();
 	}
 
-	setDraggable(index: number = this.index){
+	setDraggable(index: ?number){
+		this._draggable = true;
 		this.ref.sortableInfo = this;
-		this.context.manager.add(index, this.ref);
+		this.context.manager.add(index || this.index, this.ref);
 	}
 
-	removeDraggable(index: number = this.index){
-		this.context.manager.remove(index, this.ref);
+	removeDraggable(){
+		this._draggable = false;
+		this.context.manager.remove(this.index, this.ref);
 	}
 
 	render(){
-		const { component: Component } = this.props;
+		const props = {
+			...omit(this.props, propKeys),
+			getRef: this.getRef
+		};
 
-		return <Component {...omit(this.props, propKeys)} getRef={this.getRef} />;
+		if(this.context.childSetDraggable){
+			props.setDraggable = this.binds.setDraggable;
+			props.removeDraggable = this.binds.removeDraggable;
+		}
+
+		return React.createElement(this.props.component, props);
 	}
 };

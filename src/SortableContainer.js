@@ -37,6 +37,7 @@ const propTypes = {
 	distance: PropTypes.number,
 	useDragHandle: PropTypes.bool,
 	scrollContainer: PropTypes.object,
+	childSetDraggable: PropTypes.bool,
 	lockOffset: PropTypes.oneOfType([
 		PropTypes.number,
 		PropTypes.string,
@@ -90,6 +91,7 @@ module.exports = class SortableContainer extends Component {
 			}
 		},
 		onSortSwap: noop,
+		childSetDraggable: false,
 		lockOffset: `50%`,
 		getHelperDimensions: ({node}) => ({
 			width: node.offsetWidth,
@@ -100,12 +102,14 @@ module.exports = class SortableContainer extends Component {
 	static propTypes = propTypes;
 
 	static childContextTypes = {
-		manager: PropTypes.object.isRequired
+		manager: PropTypes.object.isRequired,
+		childSetDraggable: PropTypes.bool
 	};
 
 	getChildContext(){
 		return {
-			manager: this.manager
+			manager: this.manager,
+			childSetDraggable: this.props.childSetDraggable
 		};
 	}
 
