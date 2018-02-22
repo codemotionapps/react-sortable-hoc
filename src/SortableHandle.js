@@ -5,6 +5,6 @@ function getNode(ref){
 }
 
 module.exports = function SortableHandle(props){
-	const { component: Component } = props;
-	return <Component getNode={getNode} {...props} />;
+	const { component: Component, getComponentRef } = props;
+	return <Component getNode={getNode} ref={getComponentRef} {...props} />;
 };
