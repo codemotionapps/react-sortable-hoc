@@ -27,6 +27,7 @@ module.exports = class SortableElement extends React.Component {
 	_draggable = false;
 
 	binds = {
+		getRef: ::this.getRef,
 		setDraggable: ::this.setDraggable,
 		removeDraggable: ::this.removeDraggable
 	};
@@ -35,7 +36,9 @@ module.exports = class SortableElement extends React.Component {
 		return this.context.manager;
 	}
 
-	getRef = ref => this.ref = ref;
+	getRef(ref){
+		this.ref = ref;
+	}
 
 	componentDidMount(){
 		!this.context.childSetDraggable && this.setDraggable();
@@ -56,10 +59,10 @@ module.exports = class SortableElement extends React.Component {
 		this.removeDraggable();
 	}
 
-	setDraggable(index: ?number){
+	setDraggable(index: ?number = this.index){
 		this._draggable = true;
 		this.ref.sortableInfo = this;
-		this.context.manager.add(index || this.index, this.ref);
+		this.context.manager.add(index, this.ref);
 	}
 
 	removeDraggable(){
@@ -70,7 +73,7 @@ module.exports = class SortableElement extends React.Component {
 	render(){
 		const props = {
 			...omit(this.props, propKeys),
-			getRef: this.getRef
+			getRef: this.binds.getRef
 		};
 
 		if(this.context.childSetDraggable){
