@@ -21,6 +21,8 @@ const {
 	omit
 } = require(`./utils`);
 
+const ACCELERATION = 10;
+
 const propTypes = {
 	axis: PropTypes.oneOf([`x`, `y`]),
 	domRef: PropTypes.func,
@@ -46,8 +48,6 @@ const propTypes = {
 	transitionPrefix: PropTypes.string,
 	getHelperDimensions: PropTypes.func
 };
-
-const acceleration = 10;
 
 const propKeys = Object.keys(propTypes);
 
@@ -487,22 +487,39 @@ module.exports = class SortableContainer extends Component {
 		}
 	}
 
+	shouldHaveNode(index){
+		const { length } = this.props.items;
+		return index > 0 && index < length;
+	}
+
+	setAnimateNodesTimeout(){
+		clearTimeout(this.animateNodesTimeout);
+		this.animateNodesTimeout = setTimeout(::this.animateNodes, 10);
+	}
+
 	calculateDragBoundaries(index, newIndex = index){
 		const { nodes } = this.manager;
-		const { axis } = this.props;
-		const marginOffset = this.dragLayer.marginOffset[axis];
 
-		const oldDragBoundaries = this.dragBoundaries || {};
-		this.dragBoundaries = {};
 		const differnece = index - newIndex;
 
 		let prevIndex = index - differnece;
 		if(differnece >= 0) prevIndex--;
 		const prevNode = nodes[prevIndex];
+		if(!prevNode && this.shouldHaveNode(prevIndex)){
+			this.setAnimateNodesTimeout();
+			return false;
+		}
 
 		let nextIndex = index - differnece;
 		if(differnece <= 0) nextIndex++;
 		const nextNode = nodes[nextIndex];
+		if(!nextNode && this.shouldHaveNode(nextIndex)){
+			this.setAnimateNodesTimeout();
+			return false;
+		}
+
+		const oldDragBoundaries = this.dragBoundaries || {};
+		this.dragBoundaries = {};
 
 		this.dragBoundaries.differnece = differnece;
 
@@ -512,6 +529,8 @@ module.exports = class SortableContainer extends Component {
 		this.dragBoundaries.belowNodes = oldDragBoundaries.belowNodes;
 		this.dragBoundaries.belowSizes = oldDragBoundaries.belowSizes;
 
+		const { axis } = this.props;
+		const marginOffset = this.dragLayer.marginOffset[axis];
 		if(differnece === 0){
 			cleanTransform(oldDragBoundaries.aboveNodes, nodes);
 			cleanTransform(oldDragBoundaries.belowNodes, nodes);
@@ -565,6 +584,8 @@ module.exports = class SortableContainer extends Component {
 				this.calculateBoundary(below, `below`, axis, marginOffset, !isMovingUp, oldDragBoundaries);
 			}
 		}
+
+		return true;
 	}
 
 	animateNode(node: HTMLElement){
@@ -603,15 +624,19 @@ module.exports = class SortableContainer extends Component {
 		}
 
 		if(prev && translate < prev){
-			this.newIndex--;
-			const node = this.manager.nodes[this.newIndex];
-			this.animateNode(node);
-			this.calculateDragBoundaries(this.index, this.newIndex);
+			const result = this.calculateDragBoundaries(this.index, this.newIndex - 1);
+			if(result){
+				this.newIndex--;
+				const node = this.manager.nodes[this.newIndex];
+				this.animateNode(node);
+			}
 		}else if(next && translate > next){
-			this.newIndex++;
-			const node = this.manager.nodes[this.newIndex];
-			this.animateNode(node);
-			this.calculateDragBoundaries(this.index, this.newIndex);
+			const result = this.calculateDragBoundaries(this.index, this.newIndex + 1);
+			if(result){
+				this.newIndex++;
+				const node = this.manager.nodes[this.newIndex];
+				this.animateNode(node);
+			}
 		}
 	}
 
@@ -633,11 +658,11 @@ module.exports = class SortableContainer extends Component {
 		if(translate >= maxTranslate){
 			direction = 1; // Scroll Down/Right
 			scroll = true;
-			speed = acceleration * Math.abs((maxTranslate - translate) / this.dragLayer[size]);
+			speed = ACCELERATION * Math.abs((maxTranslate - translate) / this.dragLayer[size]);
 		}else if(translate <= this.dragLayer.minTranslate){
 			direction = -1; // Scroll Up/Left
 			scroll = true;
-			speed = acceleration * Math.abs((translate - minTranslate) / this.dragLayer[size]);
+			speed = ACCELERATION * Math.abs((translate - minTranslate) / this.dragLayer[size]);
 		}
 
 		clearInterval(this.autoscrollInterval);
