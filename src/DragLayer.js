@@ -1,8 +1,9 @@
+const DropZone = require(`./DropZone`);
 const {
 	events,
 	getOffset,
 	getElementMargin,
-	closestRect,
+	findClosestList,
 	noop,
 	getCoordinates
 } = require(`./utils`);
@@ -11,7 +12,6 @@ module.exports = class DragLayer {
 	constructor(className, transitionDuration){
 		this.helper = null;
 		this.lists = [];
-		this.listContainers = [];
 
 		if(className){
 			this.transitionPrefix = className;
@@ -30,14 +30,12 @@ module.exports = class DragLayer {
 
 	addRef(list){
 		this.lists.push(list);
-		return this.listContainers.push(undefined) - 1; // Filling a slot; returning index
 	}
 
 	removeRef(list){
 		const i = this.lists.indexOf(list);
 		if(i !== -1){
 			this.lists.splice(i, 1);
-			this.listContainers.splice(i, 1);
 		}
 	}
 
@@ -198,13 +196,17 @@ module.exports = class DragLayer {
 		if(!this.helper) return;
 
 		const { pageX, pageY } = this.delta;
-		const closestList = this.lists[closestRect(pageX, pageY, this.listContainers)];
+		const closestList = findClosestList(pageX, pageY, this.lists);
 
 		if(closestList === this.currentList) return;
 
+		const isClosestListDropZone = closestList.constructor === DropZone;
+
 		const { item } = this.currentList.manager.active;
 
-		const index = closestList.getClosestNode();
+		const index = !isClosestListDropZone
+			? closestList.getClosestNode()
+			: 0;
 		closestList.manager.active = {
 			index,
 			item
@@ -213,6 +215,12 @@ module.exports = class DragLayer {
 		this.currentList.handleSortEnd(e, closestList, index);
 
 		closestList.index = index;
+
+		if(isClosestListDropZone){
+			this.currentList = closestList;
+			closestList.handlePress();
+			return;
+		}
 
 		this.swapping = true;
 		closestList.manager.onInsert = (insertedIndex) => {
