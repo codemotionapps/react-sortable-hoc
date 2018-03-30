@@ -55,7 +55,6 @@ module.exports = class SortableContainer extends Component {
 	constructor(props){
 		super(props);
 		this.dragLayer = props.dragLayer || new DragLayer();
-		this.indexInLayer = this.dragLayer.addRef(this);
 		this.manager = new Manager(this);
 		this.host = false;
 		this.events = {
@@ -124,7 +123,7 @@ module.exports = class SortableContainer extends Component {
 			axis
 		} = this.props;
 
-		this.dragLayer.listContainers[this.indexInLayer] = this.container;
+		this.dragLayer.addRef(this);
 
 		this.document = this.container.ownerDocument || document;
 
