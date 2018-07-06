@@ -5,6 +5,7 @@ const { omit } = require(`./utils`);
 
 const propTypes = {
 	index: PropTypes.number.isRequired,
+	isDraggable: PropTypes.bool,
 	component: PropTypes.func.isRequired
 };
 
@@ -13,11 +14,14 @@ const propKeys = Object.keys(propTypes);
 module.exports = class SortableElement extends React.Component {
 	static contextTypes = {
 		manager: PropTypes.object.isRequired,
-		isDraggable: PropTypes.bool.isRequired,
 		childSetDraggable: PropTypes.bool.isRequired
 	};
 
 	static propTypes = propTypes;
+
+	static defaultProps = {
+		isDraggable: true
+	}
 
 	constructor(props){
 		super(props);
