@@ -13,7 +13,6 @@ const propKeys = Object.keys(propTypes);
 module.exports = class SortableElement extends React.Component {
 	static contextTypes = {
 		manager: PropTypes.object.isRequired,
-		isDraggable: PropTypes.bool.isRequired,
 		childSetDraggable: PropTypes.bool.isRequired
 	};
 
@@ -42,12 +41,12 @@ module.exports = class SortableElement extends React.Component {
 	}
 
 	componentDidMount(){
-		!this.context.childSetDraggable && this.props.isDraggable && this.setDraggable();
+		!this.context.childSetDraggable && this.setDraggable();
 	}
 
 	componentWillReceiveProps(nextProps){
 		if(this.index !== nextProps.index){
-			if(this._draggable && this.ref && nextProps.isDraggable){
+			if(this._draggable && this.ref){
 				this.removeDraggable();
 				this.setDraggable(nextProps.index);
 			}
