@@ -1,6 +1,6 @@
 {
   "name": "@codemotion/react-sortable-hoc",
-  "version": "0.0.10",
+  "version": "0.0.13",
   "description": "Set of components to turn any list into a sortable, animated list",
   "author": {
     "name": "Clauderic Demers",
@@ -10,9 +10,6 @@
   "homepage": "https://github.com/codemotion/react-sortable-hoc",
   "main": "src/index.js",
   "license": "MIT",
-  "scripts": {
-    "prepublishOnly": "npm install; yarn"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/codemotion/react-sortable-hoc.git"

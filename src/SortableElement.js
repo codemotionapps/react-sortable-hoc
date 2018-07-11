@@ -38,6 +38,10 @@ module.exports = class SortableElement extends React.Component {
 
 	getRef(ref){
 		this.ref = ref;
+		if(this._draggable && ref){
+			this.removeDraggable();
+			this.setDraggable();
+		}
 	}
 
 	componentDidMount(){
