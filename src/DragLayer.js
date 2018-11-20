@@ -1,14 +1,14 @@
-const DropZone = require(`./DropZone`);
-const {
+import DropZone from './DropZone';
+import {
 	events,
 	getOffset,
 	getElementMargin,
 	findClosestList,
 	noop,
 	getCoordinates
-} = require(`./utils`);
+} from './utils';
 
-module.exports = class DragLayer {
+export default class DragLayer {
 	constructor(className, transitionDuration){
 		this.helper = null;
 		this.lists = [];
@@ -241,4 +241,4 @@ module.exports = class DragLayer {
 			);
 		};
 	}
-};
+}

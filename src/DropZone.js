@@ -1,10 +1,10 @@
-const PropTypes = require(`prop-types`);
-const React = require(`react`);
-const ReactDOM = require(`react-dom`);
+import PropTypes from 'prop-types';
+import React from 'react';
+import ReactDOM from 'react-dom';
 
-const Manager = require(`./Manager`);
+import Manager from './Manager';
 
-module.exports = class DropZone extends React.Component {
+export default class DropZone extends React.Component {
 	static propTypes = {
 		dragLayer: PropTypes.object.isRequired,
 		onSortEnd: PropTypes.func.isRequired,
@@ -70,4 +70,4 @@ module.exports = class DropZone extends React.Component {
 
 		this.props.dragLayer.removeRef(this);
 	}
-};
+}

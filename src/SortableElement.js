@@ -1,7 +1,7 @@
-const PropTypes = require(`prop-types`);
-const React = require(`react`);
+import PropTypes from 'prop-types';
+import React from 'react';
 
-const { omit } = require(`./utils`);
+import { omit } from './utils';
 
 const propTypes = {
 	index: PropTypes.number.isRequired,
@@ -10,7 +10,7 @@ const propTypes = {
 
 const propKeys = Object.keys(propTypes);
 
-module.exports = class SortableElement extends React.Component {
+export default class SortableElement extends React.Component {
 	static contextTypes = {
 		manager: PropTypes.object.isRequired,
 		childSetDraggable: PropTypes.bool.isRequired
@@ -87,4 +87,4 @@ module.exports = class SortableElement extends React.Component {
 
 		return React.createElement(this.props.component, props);
 	}
-};
+}

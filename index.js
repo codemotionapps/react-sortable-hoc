@@ -1,4 +1,4 @@
-exports.SortableContainer = require(`./src/SortableContainer`);
-exports.SortableElement = require(`./src/SortableElement`);
-exports.DragLayer = require(`./src/DragLayer`);
-exports.DropZone = require(`./src/DropZone`);
+export { default as SortableContainer } from './src/SortableContainer';
+export { default as SortableElement } from './src/SortableElement';
+export { default as DragLayer } from './src/DragLayer';
+export { default as DropZone } from './src/DropZone';

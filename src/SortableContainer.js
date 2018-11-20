@@ -1,12 +1,12 @@
-const invariant = require(`invariant`);
-const PropTypes = require(`prop-types`);
-const React = require(`react`);
+import invariant from 'invariant';
+import PropTypes from 'prop-types';
+import React from 'react';
 const { Component } = React;
 
-const DragLayer = require(`./DragLayer`);
+import DragLayer from './DragLayer';
 
-const Manager = require(`./Manager`);
-const {
+import Manager from './Manager';
+import {
 	closest,
 	events,
 	getOffset,
@@ -19,7 +19,7 @@ const {
 	arrayLast,
 	attributes,
 	omit
-} = require(`./utils`);
+} from './utils';
 
 const ACCELERATION = 10;
 
@@ -51,7 +51,7 @@ const propTypes = {
 
 const propKeys = Object.keys(propTypes);
 
-module.exports = class SortableContainer extends Component {
+export default class SortableContainer extends Component {
 	constructor(props){
 		super(props);
 		this.dragLayer = props.dragLayer || new DragLayer();
@@ -701,4 +701,4 @@ module.exports = class SortableContainer extends Component {
 
 		return <Component {...props} />;
 	}
-};
+}

@@ -66,7 +66,7 @@ export function getElementMargin(element){
 	};
 }
 
-Object.freeze(exports.attributes = {
+export const attributes = Object.freeze({
 	scroll: {
 		x: `scrollLeft`,
 		y: `scrollTop`
@@ -86,7 +86,7 @@ Object.freeze(exports.attributes = {
 });
 
 export function dragComponentSize(node, axis, marginOffset, next){
-	const sizeAttribute = exports.attributes.offset[axis];
+	const sizeAttribute = attributes.offset[axis];
 
 	const size = node[sizeAttribute] + marginOffset;
 	return size * next / 2;
@@ -109,10 +109,10 @@ function distanceRect(x, y, rect){
 	return Math.sqrt((dx * dx) + (dy * dy));
 }
 
-exports.findClosestList = (x, y, lists) => {
+export function findClosestList(x, y, lists){
 	const distances = lists.map(list => distanceRect(x, y, list.container.getBoundingClientRect()));
 	return lists[distances.indexOf(Math.min(...distances))];
-};
+}
 
 export function getCoordinate(element, axis){ // Margin not included
 	const rect = element.getBoundingClientRect();

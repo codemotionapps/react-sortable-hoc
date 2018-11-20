@@ -1,4 +1,4 @@
-const { noop } = require(`./utils`);
+import { noop } from './utils';
 
 class Nodes {
 	map(mapper){
@@ -16,7 +16,7 @@ class Nodes {
 	}
 }
 
-module.exports = class Manager {
+export default class Manager {
 	nodes = new Nodes();
 	onInsert = noop;
 
@@ -46,4 +46,4 @@ module.exports = class Manager {
 
 		return this.nodes[this.active.index];
 	}
-};
+}
