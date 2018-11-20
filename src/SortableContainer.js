@@ -64,7 +64,7 @@ export default class SortableContainer extends Component {
 		};
 	}
 
-	getRef = ::this.getRef;
+	getRef = this.getRef.bind(this);
 	getRef(ref){
 		this.container = ref;
 		const { domRef } = this.props;
@@ -493,7 +493,7 @@ export default class SortableContainer extends Component {
 
 	setAnimateNodesTimeout(){
 		clearTimeout(this.animateNodesTimeout);
-		this.animateNodesTimeout = setTimeout(::this.animateNodes, 10);
+		this.animateNodesTimeout = setTimeout(this.animateNodes.bind(this), 10);
 	}
 
 	calculateDragBoundaries(index, newIndex = index){

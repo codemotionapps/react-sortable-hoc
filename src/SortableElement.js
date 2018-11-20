@@ -27,9 +27,9 @@ export default class SortableElement extends React.Component {
 	_draggable = false;
 
 	binds = {
-		getRef: ::this.getRef,
-		setDraggable: ::this.setDraggable,
-		removeDraggable: ::this.removeDraggable
+		getRef: this.getRef.bind(this),
+		setDraggable: this.setDraggable.bind(this),
+		removeDraggable: this.removeDraggable.bind(this)
 	};
 
 	get manager(){
