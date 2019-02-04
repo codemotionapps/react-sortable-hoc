@@ -35,6 +35,7 @@ const propTypes = {
 	onSortStart: PropTypes.func.isRequired,
 	onSortEnd: PropTypes.func.isRequired,
 	onSortSwap: PropTypes.func,
+	onSortError: PropTypes.func,
 	shouldCancelStart: PropTypes.func,
 	distance: PropTypes.number,
 	useDragHandle: PropTypes.bool,
@@ -90,6 +91,7 @@ export default class SortableContainer extends Component {
 			}
 		},
 		onSortSwap: noop,
+		onSortError: noop,
 		childSetDraggable: false,
 		lockOffset: `50%`,
 		getHelperDimensions: ({node}) => ({
@@ -290,12 +292,6 @@ export default class SortableContainer extends Component {
 	handleSortEnd(e, newList, newIndex){
 		this.host = false;
 
-		const { onSortEnd } = this.props;
-		if(!this.manager.active){
-			console.warn(`there is no active node`, e);
-			return;
-		}
-
 		const nodes = this.manager.nodes;
 		for(const i in nodes){
 			const node = nodes[i];
@@ -306,6 +302,20 @@ export default class SortableContainer extends Component {
 
 		// Stop autoscroll
 		clearInterval(this.autoscrollInterval);
+
+		const { onSortEnd, onSortError } = this.props;
+		if(!this.manager.active){
+			onSortError(e);
+
+			this.manager.active = null;
+
+			this.sorting = false;
+
+			this._touched = false;
+
+			this.dragLayer.swapping = false;
+			return;
+		}
 
 		// Update state
 		this.manager.active = null;

@@ -1,6 +1,6 @@
 {
   "name": "@codemotion/react-sortable-hoc",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "Set of components to turn any list into a sortable, animated list",
   "author": {
     "name": "Clauderic Demers",
