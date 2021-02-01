@@ -218,7 +218,7 @@ export default class DragLayer {
 
 		if(isClosestListDropZone){
 			this.currentList = closestList;
-			closestList.handlePress();
+			closestList.handlePress(e);
 			return;
 		}
 
@@ -229,7 +229,7 @@ export default class DragLayer {
 			delete this.swapping;
 			closestList.manager.onInsert = noop;
 
-			closestList.handlePress();
+			closestList.handlePress(e);
 			closestList.calculateDragBoundaries(closestList.index);
 			this.currentList = closestList;
 
